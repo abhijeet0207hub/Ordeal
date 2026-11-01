@@ -231,9 +231,16 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
     const ctx = scoreDistCanvasRef.current.getContext('2d');
     if (!ctx) return;
 
+    const isLight = theme.mode === 'light';
+
     const barGradient = ctx.createLinearGradient(0, 0, 0, 220);
-    barGradient.addColorStop(0, 'rgba(6, 182, 212, 0.85)');
-    barGradient.addColorStop(1, 'rgba(14, 116, 144, 0.25)');
+    if (isLight) {
+      barGradient.addColorStop(0, 'rgba(77, 124, 95, 0.85)');
+      barGradient.addColorStop(1, 'rgba(77, 124, 95, 0.25)');
+    } else {
+      barGradient.addColorStop(0, 'rgba(6, 182, 212, 0.85)');
+      barGradient.addColorStop(1, 'rgba(14, 116, 144, 0.25)');
+    }
 
     scoreDistChartInstance.current = new ChartJS(ctx, {
       type: 'bar',
@@ -244,7 +251,7 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
             label: 'Candidate Count',
             data: Object.values(bins),
             backgroundColor: barGradient,
-            borderColor: 'rgba(6, 182, 212, 1)',
+            borderColor: isLight ? 'rgba(77, 124, 95, 1)' : 'rgba(6, 182, 212, 1)',
             borderWidth: 1.5,
             borderRadius: 8,
             maxBarThickness: 42,
@@ -259,10 +266,10 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
             display: false,
           },
           tooltip: {
-            backgroundColor: 'rgba(15, 23, 42, 0.92)',
-            titleColor: '#e2e8f0',
-            bodyColor: '#38bdf8',
-            borderColor: 'rgba(255, 255, 255, 0.15)',
+            backgroundColor: isLight ? 'rgba(255, 255, 255, 0.96)' : 'rgba(15, 23, 42, 0.92)',
+            titleColor: isLight ? '#1c1917' : '#e2e8f0',
+            bodyColor: isLight ? '#31573e' : '#38bdf8',
+            borderColor: isLight ? 'rgba(68, 64, 60, 0.2)' : 'rgba(255, 255, 255, 0.15)',
             borderWidth: 1,
             padding: 10,
             displayColors: false,
@@ -274,10 +281,10 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
         scales: {
           x: {
             grid: {
-              color: 'rgba(255, 255, 255, 0.05)',
+              color: isLight ? 'rgba(68, 64, 60, 0.08)' : 'rgba(255, 255, 255, 0.05)',
             },
             ticks: {
-              color: '#94a3b8',
+              color: isLight ? '#57534e' : '#94a3b8',
               font: { family: 'Plus Jakarta Sans', size: 11 },
             },
           },
@@ -285,11 +292,11 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
             beginAtZero: true,
             ticks: {
               stepSize: 1,
-              color: '#94a3b8',
+              color: isLight ? '#57534e' : '#94a3b8',
               font: { family: 'Plus Jakarta Sans', size: 11 },
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.06)',
+              color: isLight ? 'rgba(68, 64, 60, 0.08)' : 'rgba(255, 255, 255, 0.06)',
             },
           },
         },
@@ -299,13 +306,15 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
     return () => {
       scoreDistChartInstance.current?.destroy();
     };
-  }, [filteredSessions]);
+  }, [filteredSessions, theme.mode]);
 
   // -------------------------------------------------------------
   // Chart 2: Violation Frequency Breakdown (Doughnut Chart)
   // -------------------------------------------------------------
   useEffect(() => {
     if (!violationTypeCanvasRef.current) return;
+
+    const isLight = theme.mode === 'light';
 
     // Aggregate counts by violation type
     const counts: Record<string, number> = {};
@@ -328,7 +337,7 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
     const colors = [
       'rgba(244, 63, 94, 0.85)',   // Rose
       'rgba(249, 115, 22, 0.85)',  // Amber/Orange
-      'rgba(168, 85, 247, 0.85)',  // Purple
+      'rgba(77, 124, 95, 0.85)',   // Sage
       'rgba(6, 182, 212, 0.85)',   // Cyan
       'rgba(234, 179, 8, 0.85)',   // Yellow
       'rgba(59, 130, 246, 0.85)',  // Blue
@@ -338,7 +347,7 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
     const borderColors = [
       'rgba(244, 63, 94, 1)',
       'rgba(249, 115, 22, 1)',
-      'rgba(168, 85, 247, 1)',
+      'rgba(77, 124, 95, 1)',
       'rgba(6, 182, 212, 1)',
       'rgba(234, 179, 8, 1)',
       'rgba(59, 130, 246, 1)',
@@ -352,8 +361,8 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
         datasets: [
           {
             data: dataValues,
-            backgroundColor: Object.keys(counts).length > 0 ? colors : ['rgba(16, 185, 129, 0.4)'],
-            borderColor: Object.keys(counts).length > 0 ? borderColors : ['rgba(16, 185, 129, 0.8)'],
+            backgroundColor: Object.keys(counts).length > 0 ? colors : ['rgba(77, 124, 95, 0.4)'],
+            borderColor: Object.keys(counts).length > 0 ? borderColors : ['rgba(77, 124, 95, 0.8)'],
             borderWidth: 1.5,
             hoverOffset: 6,
           },
@@ -367,7 +376,7 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
           legend: {
             position: 'bottom',
             labels: {
-              color: '#cbd5e1',
+              color: isLight ? '#44403c' : '#cbd5e1',
               font: { family: 'Plus Jakarta Sans', size: 10 },
               padding: 12,
               usePointStyle: true,
@@ -375,10 +384,10 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
             },
           },
           tooltip: {
-            backgroundColor: 'rgba(15, 23, 42, 0.94)',
-            titleColor: '#e2e8f0',
+            backgroundColor: isLight ? 'rgba(255, 255, 255, 0.96)' : 'rgba(15, 23, 42, 0.94)',
+            titleColor: isLight ? '#1c1917' : '#e2e8f0',
             bodyColor: '#f43f5e',
-            borderColor: 'rgba(255, 255, 255, 0.15)',
+            borderColor: isLight ? 'rgba(68, 64, 60, 0.2)' : 'rgba(255, 255, 255, 0.15)',
             borderWidth: 1,
             padding: 10,
           },
@@ -389,13 +398,15 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
     return () => {
       violationTypeChartInstance.current?.destroy();
     };
-  }, [filteredViolations]);
+  }, [filteredViolations, theme.mode]);
 
   // -------------------------------------------------------------
   // Chart 3: Temporal Violation Trends (Line Chart with Area Gradient)
   // -------------------------------------------------------------
   useEffect(() => {
     if (!temporalTrendCanvasRef.current) return;
+
+    const isLight = theme.mode === 'light';
 
     // Bucket violations across exam elapsed timeline
     // Intervals: 0-10m, 10-20m, 20-30m, 30-40m, 40-50m, 50m+
@@ -440,7 +451,7 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
     if (!ctx) return;
 
     const areaGradient = ctx.createLinearGradient(0, 0, 0, 220);
-    areaGradient.addColorStop(0, 'rgba(244, 63, 94, 0.45)');
+    areaGradient.addColorStop(0, 'rgba(244, 63, 94, 0.35)');
     areaGradient.addColorStop(1, 'rgba(244, 63, 94, 0.0)');
 
     temporalTrendChartInstance.current = new ChartJS(ctx, {
@@ -472,10 +483,10 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
             display: false,
           },
           tooltip: {
-            backgroundColor: 'rgba(15, 23, 42, 0.94)',
-            titleColor: '#e2e8f0',
-            bodyColor: '#fda4af',
-            borderColor: 'rgba(255, 255, 255, 0.15)',
+            backgroundColor: isLight ? 'rgba(255, 255, 255, 0.96)' : 'rgba(15, 23, 42, 0.94)',
+            titleColor: isLight ? '#1c1917' : '#e2e8f0',
+            bodyColor: isLight ? '#be123c' : '#fda4af',
+            borderColor: isLight ? 'rgba(68, 64, 60, 0.2)' : 'rgba(255, 255, 255, 0.15)',
             borderWidth: 1,
             padding: 10,
             callbacks: {
@@ -486,10 +497,10 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
         scales: {
           x: {
             grid: {
-              color: 'rgba(255, 255, 255, 0.05)',
+              color: isLight ? 'rgba(68, 64, 60, 0.08)' : 'rgba(255, 255, 255, 0.05)',
             },
             ticks: {
-              color: '#94a3b8',
+              color: isLight ? '#57534e' : '#94a3b8',
               font: { family: 'Plus Jakarta Sans', size: 11 },
             },
           },
@@ -497,11 +508,11 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
             beginAtZero: true,
             ticks: {
               stepSize: 1,
-              color: '#94a3b8',
+              color: isLight ? '#57534e' : '#94a3b8',
               font: { family: 'Plus Jakarta Sans', size: 11 },
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.06)',
+              color: isLight ? 'rgba(68, 64, 60, 0.08)' : 'rgba(255, 255, 255, 0.06)',
             },
           },
         },
@@ -511,13 +522,15 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
     return () => {
       temporalTrendChartInstance.current?.destroy();
     };
-  }, [filteredViolations]);
+  }, [filteredViolations, theme.mode]);
 
   // -------------------------------------------------------------
   // Chart 4: Student Integrity Index vs Performance (Bar Chart)
   // -------------------------------------------------------------
   useEffect(() => {
     if (!correlationCanvasRef.current) return;
+
+    const isLight = theme.mode === 'light';
 
     // Take top 7 candidates to compare Performance vs Integrity
     const displayCandidates = filteredSessions.slice(0, 7);
@@ -546,8 +559,8 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
           {
             label: 'Integrity Rating (%)',
             data: integrityScores,
-            backgroundColor: 'rgba(6, 182, 212, 0.75)',
-            borderColor: 'rgba(6, 182, 212, 1)',
+            backgroundColor: isLight ? 'rgba(77, 124, 95, 0.8)' : 'rgba(6, 182, 212, 0.75)',
+            borderColor: isLight ? 'rgba(77, 124, 95, 1)' : 'rgba(6, 182, 212, 1)',
             borderWidth: 1.5,
             borderRadius: 6,
             maxBarThickness: 18,
@@ -555,8 +568,8 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
           {
             label: 'Academic Score (%)',
             data: performanceScores,
-            backgroundColor: 'rgba(168, 85, 247, 0.75)',
-            borderColor: 'rgba(168, 85, 247, 1)',
+            backgroundColor: isLight ? 'rgba(140, 118, 92, 0.75)' : 'rgba(168, 85, 247, 0.75)',
+            borderColor: isLight ? 'rgba(120, 99, 75, 1)' : 'rgba(168, 85, 247, 1)',
             borderWidth: 1.5,
             borderRadius: 6,
             maxBarThickness: 18,
@@ -570,17 +583,17 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
           legend: {
             position: 'top',
             labels: {
-              color: '#cbd5e1',
+              color: isLight ? '#44403c' : '#cbd5e1',
               font: { family: 'Plus Jakarta Sans', size: 10 },
               usePointStyle: true,
               pointStyle: 'rectRounded',
             },
           },
           tooltip: {
-            backgroundColor: 'rgba(15, 23, 42, 0.94)',
-            titleColor: '#e2e8f0',
-            bodyColor: '#ffffff',
-            borderColor: 'rgba(255, 255, 255, 0.15)',
+            backgroundColor: isLight ? 'rgba(255, 255, 255, 0.96)' : 'rgba(15, 23, 42, 0.94)',
+            titleColor: isLight ? '#1c1917' : '#e2e8f0',
+            bodyColor: isLight ? '#292524' : '#ffffff',
+            borderColor: isLight ? 'rgba(68, 64, 60, 0.2)' : 'rgba(255, 255, 255, 0.15)',
             borderWidth: 1,
             padding: 10,
           },
@@ -588,10 +601,10 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
         scales: {
           x: {
             grid: {
-              color: 'rgba(255, 255, 255, 0.05)',
+              color: isLight ? 'rgba(68, 64, 60, 0.08)' : 'rgba(255, 255, 255, 0.05)',
             },
             ticks: {
-              color: '#94a3b8',
+              color: isLight ? '#57534e' : '#94a3b8',
               font: { family: 'Plus Jakarta Sans', size: 11 },
             },
           },
@@ -599,12 +612,12 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
             beginAtZero: true,
             max: 100,
             ticks: {
-              color: '#94a3b8',
+              color: isLight ? '#57534e' : '#94a3b8',
               font: { family: 'Plus Jakarta Sans', size: 11 },
               callback: (value) => `${value}%`,
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.06)',
+              color: isLight ? 'rgba(68, 64, 60, 0.08)' : 'rgba(255, 255, 255, 0.06)',
             },
           },
         },
@@ -614,7 +627,7 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
     return () => {
       correlationChartInstance.current?.destroy();
     };
-  }, [filteredSessions]);
+  }, [filteredSessions, theme.mode]);
 
   // Local-only export function (In-memory CSV download, zero telemetry)
   const handleExportLocalCSV = () => {

@@ -1,72 +1,85 @@
-# Ordeal: Student Report Card & In-Depth Performance Analysis
+# Ordeal: Aesthetic Light Theme (Warm Alabaster & Sage Ceramic)
 
 ## Executive Summary
-This architectural enhancement introduces a comprehensive, glassmorphic **Student Report Card and Performance Analysis** engine for **Ordeal**. Displayed both on the **candidate result screen upon exam submission** and within the **proctor review interface**, it delivers a multi-dimensional academic evaluation featuring a **Chart.js Topic Mastery Radar Chart**, **score and question-level breakdowns**, **cohort percentile rankings**, and **tamper-proof integrity audit certification**.
+This design architecture introduces **Warm Alabaster & Sage Ceramic** as the **default aesthetic light design system** across **Ordeal**, paired with a persistent **Light/Dark Mode toggle** and fine-grained glass style presets. Replacing the previous dark-only default, this system delivers an artisanal, tactile aesthetic with warm porcelain backgrounds, soft ceramic glass cards, natural sage green accents, crisp charcoal typography, and adapted Chart.js visualizations.
 
 ---
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The following decisions were confirmed by the user:
-> - **Display Locations**: Embedded seamlessly into both the **Candidate Result Screen** immediately upon exam submission and accessible inside the **Proctor Review Interface** for granular candidate audits.
-> - **Analytical Breakdowns**: Incorporates a **Topic Mastery Radar Chart (Chart.js)**, **Score & Question Accuracy Breakdown**, and **Cohort Percentile Ranking**.
-> - **Zero External Telemetry**: 100% of score analysis, percentile calculations, topic skill indexing, and radar charts are computed on-device in-browser directly from local session data.
+> The following decisions were confirmed by the user in Phase 1:
+> - **Visual Palette & Mood**: **Warm Alabaster with soft ceramic tones and sage accents** — an organic, editorial aesthetic featuring warm linen/porcelain gradients (`#fbfaf8` to `#ece7df`), ceramic acrylic cards with soft multi-layered diffused shadows, sage green highlights (`#4d7c5f`), and warm graphite typography (`#1c1917` / `#44403c`).
+> - **Integration Model**: **Make aesthetic light theme default with dark mode toggle** — the app will load by default in Warm Alabaster, with a prominent Sun/Moon toggle in the navigation bar to immediately switch between Warm Alabaster (Light) and Obsidian Frosted (Dark), while keeping fine-grained theme styles selectable.
+> - **Zero Feature or Contrast Degradation**: All real-time telemetry, neural vision HUD bounding boxes, proctoring feeds, Chart.js radar charts, and student verification cards maintain strict WCAG AA contrast and anti-glare readability.
 
 ---
 
 ## 1. Overview & Core Concept
 
 - **What It Does**:
-  - **Comprehensive Academic Report Card**:
-    - Final letter grade ($A+, A, B, C, F$), total marks achieved, percentage, and pass/fail verdict.
-    - Question accuracy summary: answered, correct, incorrect, points distribution.
-  - **Cohort Percentile Ranking**:
-    - Calculates the candidate's exact percentile position against all cohort exam sessions (e.g. $92\text{nd}$ percentile).
-    - Comparative score vs. cohort mean and exam time efficiency benchmark.
-  - **Topic / Domain Mastery Radar Chart**:
-    - Chart.js Radar visualization mapping candidate proficiency across core syllabus modules (e.g., *Distributed Consensus*, *Network Protocols*, *System Concurrency*, *Cryptographic Security*, *Adversarial Robustness*).
-    - Visual overlay comparing Candidate Score vs. Passing Baseline.
-  - **Proctor Integrity & Security Audit**:
-    - Displays overall Integrity Score, verified liveness authenticity index, zero-spoof confirmation, and list of any flagged behavioral incidents.
-    - Generates a local, tamper-evident Verification ID / Certificate Hash for official academic archiving.
-  - **Granular Question Review**:
-    - Itemized review showing candidate's response, correct answer, score points, and pedagogical explanation.
-  - **Print & Export**:
-    - Clean printer-friendly print stylesheet (`@media print`) and local in-memory transcript export.
+  - Sets **Warm Alabaster (`alabaster`)** as the platform-wide default visual theme.
+  - Adds a dedicated, intuitive **Light/Dark mode toggle button** (Sun/Moon icons) in the top navbar and login portal.
+  - Retains existing dark glass systems (`obsidian`, `smoky`, `iridescent`) for users who prefer nighttime or low-light monitoring.
+  - Adapts all interface cards, navigation bars, modal dialogs, candidate streams, and audit tables with light-aware typography and translucent ceramic glass styling.
+  - Automatically updates Chart.js axes, radar polygon grids, and tooltip contrasts based on whether light or dark mode is active.
+
+- **Target Audience & Value**:
+  - Academic institutions, proctors, and examinees who prefer an elegant, daylight-friendly environment that feels like premium stationery or an architectural studio rather than a dark terminal.
+  - Reduces eye fatigue during long 60+ minute proctored examinations in well-lit rooms.
 
 ---
 
 ## 2. User Experience & Visual Design
 
-### Dual-Access Integration
-1. **Candidate Exam Room Flow**:
-   - Upon submitting the test (or timeout), the candidate transitions to the interactive **Report Card View**.
-   - Displays animated score counters, the interactive Topic Mastery Radar, percentile badge, and printable certificate.
-2. **Proctor Surveillance & Review Flow**:
-   - In `ProctorDashboard.tsx` and `ProctorAnalytics.tsx`, clicking any examinee row or focus card opens the full Report Card in an inspectable modal/view, allowing proctors to evaluate academic skill alongside surveillance snapshots.
+### A. Color Palette & Material Tokens
+- **Background Atmosphere**:
+  - Light mode canvas: Warm ivory & linen ceramic gradient (`from-[#fdfcf9] via-[#f7f4ee] to-[#ebe5db]`).
+  - Dark mode canvas: Preserved obsidian slate (`from-slate-950 via-slate-900 to-emerald-950/40`).
+- **Ceramic Glass Card (`cardBg`, `cardBorder`, `glow`)**:
+  - Background: `rgba(255, 255, 255, 0.88)` with `backdrop-blur-xl`.
+  - Border: Soft stone hairline `border-[#e3ddd3] hover:border-[#cfc7b9]`.
+  - Shadows: Multi-stop diffused ambient shadow `shadow-[0_12px_36px_-6px_rgba(44,39,32,0.06),0_2px_8px_-2px_rgba(44,39,32,0.04)]`.
+- **Accent & Primary Action Tokens**:
+  - Sage primary button: `bg-gradient-to-r from-[#446b52] to-[#598c6d] hover:from-[#3a5d46] hover:to-[#4e7d5f] text-white shadow-md shadow-[#446b52]/20`.
+  - Sage tag/badge: `bg-[#4d7c5f]/10 text-[#31573e] border border-[#4d7c5f]/25`.
+- **Typography & Readability**:
+  - Primary headings & titles: Warm charcoal `#1c1917` (Stone 900) for sharp, fatigue-free contrast.
+  - Secondary metadata & subheads: Slate-stone `#57534e` (Stone 600).
+  - Monospace telemetry & timers: `#292524` with tabular numerals (`tabular-nums font-mono`).
 
-### Visual Styling & Theme Harmony
-- Preserves the luxury **Glassmorphic UI** (`theme.cardBg`, `theme.border`, `theme.glow`) with translucent dark acrylic styling.
-- Typographic hierarchy using `Plus Jakarta Sans` for headers, `JetBrains Mono` with `tabular-nums` for numeric grades and percentiles, and zero static pill capsules.
-- Chart.js Radar Chart rendered with cyan/indigo semi-transparent polygon fills, responsive resizing, and high-contrast dark tooltips.
+### B. Navbar & Mode Switching Experience
+- **One-Click Sun/Moon Toggle**: Positioned next to the user profile in the top navbar:
+  - When in Light mode: Displays a clean Moon icon (`Switch to Dark Mode`).
+  - When in Dark mode: Displays an ambient Sun icon (`Switch to Light Mode`).
+- **Granular Theme Preset Picker**: Preserved in both Navbar and Login Page, allowing examinees and proctors to freely choose between `Alabaster (Light)`, `Obsidian (Dark)`, `Smoky (Dark)`, and `Iridescent (Dark)`.
+
+### C. Visual Harmony Across Key Views
+- **Login Portal**:
+  - Ceramic warm glass login chamber with soft ambient sand lighting, crisp input fields (`bg-white/80 border-[#e2dcd2] text-[#1c1917] placeholder-[#a8a29e]`), and sage action buttons.
+- **Student Verification & Exam Chamber**:
+  - Camera preview and HUD overlays styled with clean dark camera containers for optical contrast, enclosed in warm alabaster card frames.
+  - Active question panels styled with crisp typography and subtle sage highlight borders on selected answers.
+- **Student Report Card & Proctor Analytics**:
+  - Radar and line charts dynamically adjust grid colors: light mode uses `#e2dcd2` grid lines and `#44403c` label text; dark mode uses `rgba(255, 255, 255, 0.12)` grid lines and `#cbd5e1` labels.
+  - Transparent radar fill using sage/cyan translucent overlays.
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1: Universal Shared Component (`StudentReportCard.tsx`)**:
-  - *Chosen Approach*: Build a modular, standalone component that accepts `session`, `exam`, `cohortSessions`, and `theme`, rendered identically in both candidate submission and proctor audit.
-  - *Why*: Guarantees single-source-of-truth accuracy between what the student sees and what the supervisory proctor reviews.
+- **Decision 1: Make `alabaster` the Default Active Theme**:
+  - *Chosen Approach*: Initialize `currentTheme` in `App.tsx` and `LoginPage.tsx` to `'alabaster'`.
+  - *Why*: Directly satisfies the user's primary requirement while ensuring new sessions immediately experience the aesthetic light theme.
+  - *Fallback*: Users can switch back to dark mode with a single click.
 
-- **Decision 2: Client-Side Topic Mastery Categorization**:
-  - *Chosen Approach*: Algorithmically tag and group exam questions by domain category or explicit tags, calculating candidate accuracy per category to drive the radar chart dynamically.
-  - *Why*: Eliminates hardcoding; any scanned or custom-authored exam dynamically generates its own topic radar dimensions.
+- **Decision 2: Theme Object Structure Expansion (`mode: 'light' | 'dark'`)**:
+  - *Chosen Approach*: Add `mode: 'light' | 'dark'` and semantic text classes (`textPrimary`, `textSecondary`, `textMuted`, `inputBg`, `inputBorder`) to `ThemeConfig` in `src/utils/theme.ts`.
+  - *Why*: Eliminates fragile CSS hackery and provides clean, type-safe Tailwind classes for every component to render text and inputs with correct contrast.
 
-- **Decision 3: In-Browser Percentile & Cohort Normalization**:
-  - *Chosen Approach*: Rank all active and submitted sessions in memory to calculate true mathematical percentile:
-    $$\text{Percentile} = \left(\frac{\text{Count of cohort scores below candidate}}{\text{Total cohort examinees}}\right) \times 100$$
-  - *Why*: Provides genuine competitive feedback without external servers.
+- **Decision 3: Chart.js Dynamic Theme Adaptation**:
+  - *Chosen Approach*: Pass `isDarkMode: boolean` or `currentTheme` to Chart.js configuration hooks in `ProctorAnalytics.tsx` and `StudentReportCard.tsx`, switching tick colors, tooltip backgrounds, and grid line opacities.
+  - *Why*: Prevents invisible gray-on-white text in Chart.js canvas elements when switching from dark to light mode.
 
 ---
 
@@ -74,34 +87,35 @@ This architectural enhancement introduces a comprehensive, glassmorphic **Studen
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        Report Card Architecture                        │
+│                        Theme Architecture                              │
 ├────────────────────────────────────────────────────────────────────────┤
-│  src/components/StudentReportCard.tsx (NEW)                           │
-│    ├── Header & Grade Banner (Letter Grade, Pass/Fail, Percentile)     │
-│    ├── Chart.js Topic Mastery Radar Chart (RadialLinearScale)          │
-│    ├── Cohort Comparison Metrics (Candidate vs Mean, Speed Benchmark)  │
-│    ├── Proctoring & Integrity Seal (Integrity %, Liveness, Incidents)  │
-│    ├── Itemized Question Accuracy & Answer Key Review                  │
-│    └── Local Print & JSON/CSV Export Triggers                          │
+│  src/utils/theme.ts                                                    │
+│    ├── GlassTheme: 'alabaster' | 'obsidian' | 'smoky' | 'iridescent'   │
+│    ├── Mode: 'light' | 'dark'                                          │
+│    └── Theme Tokens: cardBg, navBg, textPrimary, textSecondary, etc.   │
 │                                                                        │
-│  Integration Points:                                                   │
-│    • ExamRoom.tsx: Replace basic end screen with StudentReportCard     │
-│    • ProctorDashboard.tsx: Add "View Full Report Card" action button   │
-│    • ProctorAnalytics.tsx: Connect examinee table to Report Card Modal │
+│  src/App.tsx                                                           │
+│    ├── Default Theme State: 'alabaster'                                │
+│    ├── document.documentElement.classList ('light' vs 'dark')          │
+│    └── Root Canvas: dynamic gradient from themeConfig.previewGradient │
+│                                                                        │
+│  src/components/Navbar.tsx                                             │
+│    ├── Quick Sun/Moon Toggle Button (instant switch between Light/Dark)│
+│    └── Dropdown Selector (Alabaster, Obsidian, Smoky, Iridescent)     │
+│                                                                        │
+│  src/components/StudentReportCard.tsx & ProctorAnalytics.tsx           │
+│    └── Chart.js dynamic color palette (dark text on light canvas)      │
+│                                                                        │
+│  src/components/ExamRoom.tsx, LoginPage.tsx, StudentVerification.tsx    │
+│    └── Contrast-aware typography and input styling                     │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Verification & Validation Plan
-1. **Type Safety & Linting**: Run `lint_applet` (`tsc --noEmit`) to verify zero TypeScript errors. (Status: PASSED)
-2. **Build Verification**: Run `compile_applet` (`vite build`) to confirm clean asset bundling. (Status: PASSED)
-3. **End-to-End Test**:
-   - Complete exam as candidate -> Submit -> Verify instant Report Card render, Radar chart display, and Percentile calculations. (Status: VERIFIED)
-   - Switch to Proctor portal -> Select candidate -> Open Report Card audit modal -> Verify identical score, radar, and integrity telemetry. (Status: VERIFIED)
-
-## Implementation Status
-- [x] Installed and configured Chart.js `RadialLinearScale` for Radar chart support.
-- [x] Created `src/components/StudentReportCard.tsx` with letter grades ($A+$ to $F$), cohort percentile rank, Radar chart, proctor integrity seal, and question-level review.
-- [x] Connected `StudentReportCard` in `src/components/ExamRoom.tsx` as the candidate post-submission results screen.
-- [x] Connected `StudentReportCard` in `src/components/ProctorDashboard.tsx` under candidate focus controls with modal preview.
-- [x] Connected `StudentReportCard` in `src/components/ProctorAnalytics.tsx` within the examinee telemetry table.
-- [x] Built and verified with zero TypeScript and bundle errors.
+1. **Type Safety & Linting**: Run `lint_applet` (`tsc --noEmit`) to verify zero TypeScript errors.
+2. **Build Verification**: Run `compile_applet` (`vite build`) to confirm clean asset bundling.
+3. **End-to-End Visual Audit**:
+   - Verify login screen in Warm Alabaster theme with crisp typography and contrast.
+   - Verify top navbar Sun/Moon toggle switches seamlessly between Alabaster and Obsidian.
+   - Verify Candidate Exam Room and Student Verification with camera feeds in light mode.
+   - Verify Report Card Topic Radar Chart and Proctor Analytics with light-mode grid readability.

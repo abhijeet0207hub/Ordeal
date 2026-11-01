@@ -188,7 +188,7 @@ const defaultExams: Exam[] = [
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [currentTheme, setCurrentTheme] = useState<GlassTheme>('obsidian');
+  const [currentTheme, setCurrentTheme] = useState<GlassTheme>('alabaster');
   const [currentTab, setCurrentTab] = useState<'student' | 'proctor' | 'analytics' | 'violations' | 'lab'>('student');
 
   const [exams, setExams] = useState<Exam[]>(defaultExams);
@@ -205,6 +205,17 @@ export default function App() {
   const [isQuestionBuilderOpen, setIsQuestionBuilderOpen] = useState(false);
 
   const themeConfig = GLASS_THEMES[currentTheme];
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (themeConfig.mode === 'light') {
+      root.classList.add('light-theme');
+      root.classList.remove('dark');
+    } else {
+      root.classList.remove('light-theme');
+      root.classList.add('dark');
+    }
+  }, [themeConfig.mode]);
 
   const fetchData = async () => {
     try {
@@ -344,17 +355,26 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen bg-gradient-to-br ${themeConfig.previewGradient} text-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] relative selection:bg-cyan-500/30 selection:text-white transition-colors duration-300`}
+      className={`min-h-screen bg-gradient-to-br ${themeConfig.previewGradient} ${themeConfig.textPrimary} flex flex-col font-['Plus_Jakarta_Sans',sans-serif] relative selection:bg-[#4d7c5f]/25 transition-colors duration-300`}
     >
       {/* Ambient Glass Glow Orbs */}
-      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none"></div>
-      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+      {themeConfig.mode === 'light' ? (
+        <>
+          <div className="fixed top-0 left-1/4 w-[520px] h-[520px] bg-[#4d7c5f]/8 rounded-full blur-[130px] pointer-events-none"></div>
+          <div className="fixed bottom-0 right-1/4 w-[520px] h-[520px] bg-[#d6c9b3]/30 rounded-full blur-[130px] pointer-events-none"></div>
+        </>
+      ) : (
+        <>
+          <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none"></div>
+          <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+        </>
+      )}
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 bg-black/85 backdrop-blur-xl text-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-2 animate-bounce">
-          <span className="text-cyan-400">⚡</span>
-          <span>{toastMessage}</span>
+        <div className="fixed bottom-5 right-5 z-50 bg-black/85 backdrop-blur-xl text-white keep-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-2 animate-bounce">
+          <span className="text-emerald-400">⚡</span>
+          <span className="keep-white">{toastMessage}</span>
         </div>
       )}
 

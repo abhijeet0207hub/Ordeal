@@ -182,6 +182,8 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
     const ctx = radarCanvasRef.current.getContext('2d');
     if (!ctx) return;
 
+    const isLight = theme.mode === 'light';
+
     radarChartInstance.current = new ChartJS(ctx, {
       type: 'radar',
       data: {
@@ -190,11 +192,11 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
           {
             label: 'Candidate Mastery (%)',
             data: studentScores,
-            backgroundColor: 'rgba(6, 182, 212, 0.35)', // Cyan glass fill
-            borderColor: 'rgba(6, 182, 212, 1)',
+            backgroundColor: isLight ? 'rgba(77, 124, 95, 0.28)' : 'rgba(6, 182, 212, 0.35)',
+            borderColor: isLight ? 'rgba(77, 124, 95, 1)' : 'rgba(6, 182, 212, 1)',
             borderWidth: 2,
             pointBackgroundColor: '#ffffff',
-            pointBorderColor: 'rgba(6, 182, 212, 1)',
+            pointBorderColor: isLight ? 'rgba(77, 124, 95, 1)' : 'rgba(6, 182, 212, 1)',
             pointBorderWidth: 2,
             pointRadius: 4,
             pointHoverRadius: 6,
@@ -202,7 +204,7 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
           {
             label: 'Passing Baseline (60%)',
             data: benchmarkScores,
-            backgroundColor: 'rgba(244, 63, 94, 0.1)',
+            backgroundColor: 'rgba(244, 63, 94, 0.08)',
             borderColor: 'rgba(244, 63, 94, 0.65)',
             borderWidth: 1.5,
             borderDash: [4, 4],
@@ -217,17 +219,17 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
           legend: {
             position: 'top',
             labels: {
-              color: '#cbd5e1',
+              color: isLight ? '#44403c' : '#cbd5e1',
               font: { family: 'Plus Jakarta Sans', size: 10 },
               usePointStyle: true,
               pointStyle: 'rectRounded',
             },
           },
           tooltip: {
-            backgroundColor: 'rgba(15, 23, 42, 0.94)',
-            titleColor: '#e2e8f0',
-            bodyColor: '#38bdf8',
-            borderColor: 'rgba(255, 255, 255, 0.15)',
+            backgroundColor: isLight ? 'rgba(255, 255, 255, 0.96)' : 'rgba(15, 23, 42, 0.94)',
+            titleColor: isLight ? '#1c1917' : '#e2e8f0',
+            bodyColor: isLight ? '#31573e' : '#38bdf8',
+            borderColor: isLight ? 'rgba(68, 64, 60, 0.2)' : 'rgba(255, 255, 255, 0.15)',
             borderWidth: 1,
             padding: 8,
             callbacks: {
@@ -238,18 +240,18 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
         scales: {
           r: {
             angleLines: {
-              color: 'rgba(255, 255, 255, 0.08)',
+              color: isLight ? 'rgba(68, 64, 60, 0.12)' : 'rgba(255, 255, 255, 0.08)',
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.08)',
+              color: isLight ? 'rgba(68, 64, 60, 0.12)' : 'rgba(255, 255, 255, 0.08)',
             },
             pointLabels: {
-              color: '#cbd5e1',
+              color: isLight ? '#292524' : '#cbd5e1',
               font: { family: 'Plus Jakarta Sans', size: 10, weight: 600 },
             },
             ticks: {
               backdropColor: 'transparent',
-              color: '#64748b',
+              color: isLight ? '#78716c' : '#64748b',
               font: { size: 9 },
               stepSize: 20,
             },
@@ -263,7 +265,7 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
     return () => {
       radarChartInstance.current?.destroy();
     };
-  }, [topicMap, scorePercent]);
+  }, [topicMap, scorePercent, theme.mode]);
 
   // Export Transcript function
   const handleExportJSON = () => {

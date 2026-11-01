@@ -11,6 +11,8 @@ import {
   FileCheck,
   PlusCircle,
   BarChart3,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { AuthUser, GlassTheme } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
@@ -42,14 +44,23 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const theme = GLASS_THEMES[currentTheme];
   const isProctor = currentUser.role === 'proctor';
+  const isLightMode = theme.mode === 'light';
+
+  const handleToggleDarkMode = () => {
+    if (isLightMode) {
+      setCurrentTheme('obsidian');
+    } else {
+      setCurrentTheme('alabaster');
+    }
+  };
 
   return (
-    <header className={`sticky top-0 z-40 border-b border-white/10 ${theme.navBg} text-slate-100 transition-colors duration-300`}>
+    <header className={`sticky top-0 z-40 border-b ${theme.border} ${theme.navBg} ${theme.textPrimary} transition-colors duration-300`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Zone 1: Wordmark */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shadow-lg shadow-emerald-500/10">
+            <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shadow-sm">
               <ShieldCheck className="w-5 h-5 text-emerald-400 stroke-[2.4]" />
             </div>
             <div>
@@ -57,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="font-extrabold text-lg tracking-tight text-white font-['Plus_Jakarta_Sans']">
                   Ordeal
                 </span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${theme.badgeBg} ${theme.badgeText}`}>
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${theme.badgeBg} ${theme.badgeText}`}>
                   {isProctor ? 'Proctor Center' : 'Candidate Room'}
                 </span>
               </div>
@@ -103,7 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
                   <span>Evidence Audit</span>
                   {pendingViolationsCount > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-500 text-white">
+                    <span className="px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-rose-500 text-white keep-white">
                       {pendingViolationsCount}
                     </span>
                   )}
@@ -118,7 +129,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 >
                   <Cpu className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Anti-Spoof AI Lab</span>
+                  <span>Anti-Spoof Lab</span>
                 </button>
 
                 {/* Proctor Ingestion Modals Actions */}
@@ -148,7 +159,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Candidate Examination Portal
                 </span>
                 {isExamInProgress && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                     MONITOR ACTIVE
                   </span>
@@ -157,10 +168,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </nav>
 
-          {/* Zone 3: Theme Switcher & User Profile & Logout */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            {/* Glass Style Dropdown */}
-            <div className="hidden sm:flex items-center bg-black/40 border border-white/10 rounded-xl p-1 gap-1">
+          {/* Zone 3: Light/Dark Mode Toggle, Theme Switcher & User Profile & Logout */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Dedicated Light / Dark Mode Quick Toggle */}
+            <button
+              onClick={handleToggleDarkMode}
+              title={isLightMode ? 'Switch to Dark Mode (Obsidian)' : 'Switch to Light Mode (Warm Alabaster)'}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-semibold text-white transition-all shadow-xs"
+            >
+              {isLightMode ? (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-slate-300" />
+                  <span className="hidden xl:inline text-[11px]">Dark</span>
+                </>
+              ) : (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden xl:inline text-[11px]">Light</span>
+                </>
+              )}
+            </button>
+
+            {/* Glass Style Selector */}
+            <div className="hidden lg:flex items-center bg-black/40 border border-white/10 rounded-xl p-1 gap-1">
               {(Object.keys(GLASS_THEMES) as GlassTheme[]).map((thm) => (
                 <button
                   key={thm}
@@ -168,7 +198,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title={GLASS_THEMES[thm].tagline}
                   className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${
                     currentTheme === thm
-                      ? 'bg-white/20 text-white shadow-sm'
+                      ? 'bg-white/20 text-white shadow-xs border border-white/20'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >

@@ -9,6 +9,8 @@ import {
   KeyRound,
   IdCard,
   FileSpreadsheet,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { AuthUser, GlassTheme } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
@@ -63,24 +65,63 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     });
   };
 
+  const isLightMode = themeConfig.mode === 'light';
+
+  const handleToggleDarkMode = () => {
+    if (isLightMode) {
+      setCurrentTheme('obsidian');
+    } else {
+      setCurrentTheme('alabaster');
+    }
+  };
+
   return (
-    <div className={`min-h-screen relative flex items-center justify-center p-4 bg-gradient-to-br ${themeConfig.previewGradient} overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]`}>
+    <div className={`min-h-screen relative flex items-center justify-center p-4 bg-gradient-to-br ${themeConfig.previewGradient} ${themeConfig.textPrimary} overflow-hidden font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300`}>
+      {/* Quick Light / Dark Mode Toggle in Top-Right */}
+      <div className="fixed top-5 right-5 z-30 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleToggleDarkMode}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border ${themeConfig.border} ${themeConfig.cardBg} ${themeConfig.glow} text-xs font-bold text-white transition-all`}
+        >
+          {isLightMode ? (
+            <>
+              <Moon className="w-4 h-4 text-slate-400" />
+              <span>Switch to Dark Mode</span>
+            </>
+          ) : (
+            <>
+              <Sun className="w-4 h-4 text-amber-400" />
+              <span>Switch to Warm Alabaster (Light)</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Ambient Glass Glow Orbs */}
-      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      {isLightMode ? (
+        <>
+          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-[#4d7c5f]/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-[#d6c9b3]/35 rounded-full blur-3xl pointer-events-none"></div>
+        </>
+      ) : (
+        <>
+          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+        </>
+      )}
 
       <div className="max-w-md w-full relative z-10 space-y-6">
         {/* Brand Lockup */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl shadow-emerald-500/10 mb-2">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-lg mb-2">
             <ShieldCheck className="w-8 h-8 text-emerald-400 stroke-[2.2]" />
           </div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">
             Ordeal
           </h1>
           <p className="text-xs text-slate-300 font-medium tracking-wide">
-            Autonomous AI Anti-Spoofing Examination Platform
+            Autonomous Neural Anti-Spoofing Examination Platform
           </p>
         </div>
 
@@ -262,17 +303,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5" />
-                Active Glassmorphic Style:
+                Active Design System:
               </span>
               <button
                 onClick={() => setShowThemeModal(true)}
                 className="text-[10px] text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
               >
-                Compare All 3 Styles
+                Compare All 4 Styles
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
               {(Object.keys(GLASS_THEMES) as GlassTheme[]).map((thm) => (
                 <button
                   key={thm}
@@ -280,7 +321,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   onClick={() => setCurrentTheme(thm)}
                   className={`py-1.5 px-2 rounded-lg text-[10px] font-semibold transition-all truncate border ${
                     currentTheme === thm
-                      ? 'bg-white/20 border-white/30 text-white shadow-sm'
+                      ? 'bg-white/20 border-white/30 text-white shadow-xs'
                       : 'bg-black/20 border-white/5 text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -300,7 +341,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-cyan-400" />
                 <h3 className="text-base font-bold text-white">
-                  Ordeal Glassmorphic Theme Samples
+                  Ordeal Design System Presets
                 </h3>
               </div>
               <button
@@ -312,10 +353,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             </div>
 
             <p className="text-xs text-slate-300">
-              Select any of the 3 glassmorphic design systems to preview how translucent acrylic surfaces, borders, and glows look across the system:
+              Select from Warm Alabaster (Default Light) or any of the 3 dark glassmorphic systems:
             </p>
 
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 gap-4">
               {(Object.keys(GLASS_THEMES) as GlassTheme[]).map((thm) => {
                 const cfg = GLASS_THEMES[thm];
                 const isSelected = currentTheme === thm;
@@ -334,7 +375,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-bold text-white">{cfg.name}</span>
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cfg.accentColor }}></span>
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.accentColor }}></span>
                       </div>
                       <div className="space-y-1">
                         <div className="h-1.5 w-16 bg-white/20 rounded-full"></div>
@@ -343,7 +384,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     </div>
 
                     <div>
-                      <h4 className="text-xs font-bold text-white">{cfg.name}</h4>
+                      <h4 className="text-xs font-bold text-white">{cfg.name} ({cfg.mode === 'light' ? 'Light' : 'Dark'})</h4>
                       <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{cfg.tagline}</p>
                     </div>
 
@@ -355,7 +396,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                       }}
                       className={`w-full py-1.5 text-[10px] font-bold rounded-lg border transition-all ${
                         isSelected
-                          ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                          ? 'bg-emerald-600 text-white keep-white border-emerald-500'
                           : 'bg-white/10 text-white border-white/10 hover:bg-white/15'
                       }`}
                     >

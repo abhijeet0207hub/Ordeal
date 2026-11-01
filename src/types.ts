@@ -52,7 +52,7 @@ export interface ExamQuestion {
   points: number;
 }
 
-export type GlassTheme = 'obsidian' | 'smoky' | 'iridescent';
+export type GlassTheme = 'alabaster' | 'obsidian' | 'smoky' | 'iridescent';
 
 export interface AuthUser {
   id: string;
