@@ -1,0 +1,7 @@
+{
+  "name": "Ordeal - Autonomous AI Anti-Spoofing Exam System",
+  "description": "Ordeal is a glassmorphic AI-powered proctored examination platform with real-time anti-spoofing liveness verification, document test scanning, question randomization, and proctor surveillance.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
