@@ -10,6 +10,7 @@ import {
   Layers,
   FileCheck,
   PlusCircle,
+  BarChart3,
 } from 'lucide-react';
 import { AuthUser, GlassTheme } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
@@ -77,6 +78,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <Eye className="w-3.5 h-3.5 text-cyan-400" />
                   <span>Surveillance Grid</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentTab('analytics')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    currentTab === 'analytics'
+                      ? 'bg-white/15 text-white border border-white/20 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  }`}
+                >
+                  <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Analytics</span>
                 </button>
 
                 <button

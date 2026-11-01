@@ -189,7 +189,7 @@ const defaultExams: Exam[] = [
 export default function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [currentTheme, setCurrentTheme] = useState<GlassTheme>('obsidian');
-  const [currentTab, setCurrentTab] = useState<'student' | 'proctor' | 'violations' | 'lab'>('student');
+  const [currentTab, setCurrentTab] = useState<'student' | 'proctor' | 'analytics' | 'violations' | 'lab'>('student');
 
   const [exams, setExams] = useState<Exam[]>(defaultExams);
   const [selectedExam, setSelectedExam] = useState<Exam>(defaultExams[0]);
@@ -399,11 +399,12 @@ export default function App() {
         ) : (
           /* Proctor Command Center */
           <>
-            {currentTab === 'proctor' && (
+            {(currentTab === 'proctor' || currentTab === 'analytics') && (
               <ProctorDashboard
                 sessions={sessions}
                 exams={exams}
                 violations={violations}
+                initialTab={currentTab === 'analytics' ? 'analytics' : 'surveillance'}
                 onSelectCandidateToReview={(studentId) => {
                   setSelectedStudentFilter(studentId);
                   setCurrentTab('violations');

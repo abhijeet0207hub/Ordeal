@@ -16,9 +16,11 @@ import {
   FileCheck,
   PlusCircle,
   Shuffle,
+  BarChart3,
 } from 'lucide-react';
 import { StudentSession, Exam, ViolationRecord, GlassTheme } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
+import { ProctorAnalytics } from './ProctorAnalytics';
 
 interface ProctorDashboardProps {
   sessions: StudentSession[];
@@ -30,6 +32,7 @@ interface ProctorDashboardProps {
   onOpenQuestionBuilder?: () => void;
   onToggleRandomization?: (examId: string, currentVal: boolean) => void;
   currentTheme: GlassTheme;
+  initialTab?: 'surveillance' | 'analytics';
 }
 
 export const ProctorDashboard: React.FC<ProctorDashboardProps> = ({
@@ -42,10 +45,18 @@ export const ProctorDashboard: React.FC<ProctorDashboardProps> = ({
   onOpenQuestionBuilder,
   onToggleRandomization,
   currentTheme,
+  initialTab = 'surveillance',
 }) => {
+  const [activeTab, setActiveTab] = useState<'surveillance' | 'analytics'>(initialTab);
   const [selectedSession, setSelectedSession] = useState<StudentSession | null>(
     sessions[0] || null
   );
+
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'FLAGGED' | 'IN_PROGRESS' | 'SUBMITTED'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [proctorWarningInput, setProctorWarningInput] = useState('');
@@ -130,8 +141,57 @@ export const ProctorDashboard: React.FC<ProctorDashboardProps> = ({
         </div>
       </div>
 
-      {/* Metric Cards in Glass */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* View Sub-Tabs: Surveillance Grid vs Analytics */}
+      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="flex items-center gap-1.5 p-1 bg-black/40 border border-white/10 rounded-2xl">
+          <button
+            onClick={() => setActiveTab('surveillance')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'surveillance'
+                ? 'bg-white/15 text-white border border-white/20 shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Eye className="w-4 h-4 text-cyan-400" />
+            <span>Surveillance Grid</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'analytics'
+                ? 'bg-white/15 text-white border border-white/20 shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4 text-emerald-400" />
+            <span>Analytics & Trends</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/30">
+              Chart.js
+            </span>
+          </button>
+        </div>
+
+        <div className="text-xs text-slate-400 hidden sm:flex items-center gap-2">
+          <span>Active View:</span>
+          <span className="font-semibold text-white">
+            {activeTab === 'surveillance' ? 'Live Candidate Surveillance' : 'Local Performance & Violation Analytics'}
+          </span>
+        </div>
+      </div>
+
+      {activeTab === 'analytics' ? (
+        <ProctorAnalytics
+          sessions={sessions}
+          violations={violations}
+          exams={exams}
+          currentTheme={currentTheme}
+          onSelectCandidateToReview={onSelectCandidateToReview}
+        />
+      ) : (
+        <>
+          {/* Metric Cards in Glass */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className={`rounded-3xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-5 shadow-xl`}>
           <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
             <span>Active Examinees</span>
@@ -431,6 +491,8 @@ export const ProctorDashboard: React.FC<ProctorDashboardProps> = ({
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

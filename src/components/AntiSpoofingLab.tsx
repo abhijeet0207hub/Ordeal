@@ -25,7 +25,7 @@ export const AntiSpoofingLab: React.FC<AntiSpoofingLabProps> = ({
   const [metrics, setMetrics] = useState<LivenessMetrics | null>(null);
   const [activeBenchmark, setActiveBenchmark] = useState<'LIVE' | 'PHOTO_ATTACK' | 'SCREEN_ATTACK' | 'MULTI_FACE'>('LIVE');
   const [isAuditing, setIsAuditing] = useState(false);
-  const [geminiResult, setGeminiResult] = useState<any | null>(null);
+  const [neuralAuditResult, setNeuralAuditResult] = useState<any | null>(null);
 
   const theme = GLASS_THEMES[currentTheme];
 
@@ -68,7 +68,7 @@ export const AntiSpoofingLab: React.FC<AntiSpoofingLabProps> = ({
   const triggerLocalNeuralAudit = async () => {
     if (!videoRef.current || isAuditing) return;
     setIsAuditing(true);
-    setGeminiResult(null);
+    setNeuralAuditResult(null);
 
     try {
       await new Promise((r) => setTimeout(r, 250));
@@ -88,7 +88,7 @@ export const AntiSpoofingLab: React.FC<AntiSpoofingLabProps> = ({
           ? 'On-device TensorFlow.js WebGL and 2D Laplacian frequency analysis verified natural 3D volumetric facial contours and spontaneous physiological micro-motion. Zero secondary displays or unauthorized objects detected.'
           : 'Local anti-spoofing heuristic detected high frequency planar moiré artifacts and lack of ocular depth variation.',
       };
-      setGeminiResult(result);
+      setNeuralAuditResult(result);
     } catch (e) {
       console.warn('Lab audit error:', e);
     } finally {
@@ -280,7 +280,7 @@ export const AntiSpoofingLab: React.FC<AntiSpoofingLabProps> = ({
           </div>
 
           {/* Local Neural AI Result Card */}
-          {geminiResult && (
+          {neuralAuditResult && (
             <div className={`rounded-3xl border border-indigo-500/50 ${theme.cardBg} ${theme.glow} p-6 shadow-2xl space-y-4`}>
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
@@ -289,32 +289,32 @@ export const AntiSpoofingLab: React.FC<AntiSpoofingLabProps> = ({
                 </div>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-bold font-mono ${
-                    geminiResult.isLive
+                    neuralAuditResult.isLive
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                       : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                   }`}
                 >
-                  {geminiResult.isLive ? 'AUTHENTIC HUMAN 3D' : 'PRESENTATION ATTACK DETECTED'}
+                  {neuralAuditResult.isLive ? 'AUTHENTIC HUMAN 3D' : 'PRESENTATION ATTACK DETECTED'}
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
                   <span className="text-slate-400">Liveness Score</span>
-                  <p className="text-xl font-bold text-emerald-400 mt-1">{geminiResult.livenessScore}%</p>
+                  <p className="text-xl font-bold text-emerald-400 mt-1">{neuralAuditResult.livenessScore}%</p>
                 </div>
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
                   <span className="text-slate-400">Classification</span>
-                  <p className="text-sm font-bold text-white mt-1">{geminiResult.spoofAttackType || 'NONE'}</p>
+                  <p className="text-sm font-bold text-white mt-1">{neuralAuditResult.spoofAttackType || 'NONE'}</p>
                 </div>
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
                   <span className="text-slate-400">Face Count</span>
-                  <p className="text-xl font-bold text-cyan-400 mt-1">{geminiResult.faceCount}</p>
+                  <p className="text-xl font-bold text-cyan-400 mt-1">{neuralAuditResult.faceCount}</p>
                 </div>
                 <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
                   <span className="text-slate-400">Action</span>
                   <p className="text-sm font-bold text-indigo-300 mt-1">
-                    {geminiResult.suggestedProctorAction || 'ALLOW'}
+                    {neuralAuditResult.suggestedProctorAction || 'ALLOW'}
                   </p>
                 </div>
               </div>
@@ -322,7 +322,7 @@ export const AntiSpoofingLab: React.FC<AntiSpoofingLabProps> = ({
               <div className="p-3.5 bg-black/40 rounded-2xl border border-white/10 text-xs">
                 <span className="text-slate-400 font-bold block mb-1">Reasoning:</span>
                 <p className="text-slate-200 leading-relaxed font-mono">
-                  {geminiResult.forensicReasoning}
+                  {neuralAuditResult.forensicReasoning}
                 </p>
               </div>
             </div>

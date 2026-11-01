@@ -11,6 +11,7 @@ import {
   Sparkles,
   Lock,
   Shuffle,
+  Cpu,
 } from 'lucide-react';
 import { Exam, StudentSession, AuthUser, GlassTheme } from '../types';
 import { LocalNeuralDetector } from '../utils/localNeuralDetector';
@@ -53,8 +54,8 @@ export const StudentVerification: React.FC<StudentVerificationProps> = ({
   const [livenessScore, setLivenessScore] = useState<number>(0);
   const [detector] = useState(() => new LocalNeuralDetector());
   const [isVerifying, setIsVerifying] = useState(false);
-  const [geminiAuditing, setGeminiAuditing] = useState(false);
-  const [geminiFeedback, setGeminiFeedback] = useState<string>('');
+  const [isNeuralAuditing, setIsNeuralAuditing] = useState(false);
+  const [neuralAuditFeedback, setNeuralAuditFeedback] = useState<string>('');
 
   const challenges = [
     {
@@ -164,10 +165,10 @@ export const StudentVerification: React.FC<StudentVerificationProps> = ({
     return () => cancelAnimationFrame(animId);
   }, [step, activeChallengeStep]);
 
-  const triggerGeminiDeepAudit = async () => {
+  const triggerLocalNeuralAudit = async () => {
     if (!videoRef.current) return;
-    setGeminiAuditing(true);
-    setGeminiFeedback('');
+    setIsNeuralAuditing(true);
+    setNeuralAuditFeedback('');
 
     try {
       // Process frame completely on-device with TensorFlow.js WebGL & local Laplacian filters
@@ -177,14 +178,14 @@ export const StudentVerification: React.FC<StudentVerificationProps> = ({
 
       setLivenessScore(score);
       setChallengeStatus('success');
-      setGeminiFeedback(
+      setNeuralAuditFeedback(
         `On-Device Neural Verdict: ${isAuthentic ? 'AUTHENTIC 3D HUMAN' : 'SECONDARY DISPLAY SUSPECTED'} (${score}% confidence). Local ML verified 3D volumetric depth, natural micro-saccades, and absence of moiré display grids.`
       );
     } catch (e) {
       console.warn('Local neural audit error:', e);
-      setGeminiFeedback('Local neural vision verified biometric micro-features.');
+      setNeuralAuditFeedback('Local neural vision verified biometric micro-features.');
     } finally {
-      setGeminiAuditing(false);
+      setIsNeuralAuditing(false);
     }
   };
 
@@ -514,17 +515,17 @@ export const StudentVerification: React.FC<StudentVerificationProps> = ({
 
           <div className="max-w-md mx-auto mt-4 flex flex-col gap-2">
             <button
-              onClick={triggerGeminiDeepAudit}
-              disabled={geminiAuditing}
+              onClick={triggerLocalNeuralAudit}
+              disabled={isNeuralAuditing}
               className="py-2.5 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all"
             >
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              {geminiAuditing ? 'TensorFlow.js WebGL Processing Frame...' : 'Verify Liveness with On-Device Neural Vision (TensorFlow.js)'}
+              <Cpu className="w-4 h-4 text-cyan-400" />
+              {isNeuralAuditing ? 'TensorFlow.js WebGL Processing Frame...' : 'Verify Liveness with On-Device Neural Vision (TensorFlow.js)'}
             </button>
 
-            {geminiFeedback && (
+            {neuralAuditFeedback && (
               <p className="text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 p-2.5 rounded-lg text-center">
-                {geminiFeedback}
+                {neuralAuditFeedback}
               </p>
             )}
 
