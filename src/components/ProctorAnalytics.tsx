@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { StudentSession, ViolationRecord, Exam, GlassTheme, ViolationType } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
+import { StudentReportCard } from './StudentReportCard';
 
 // Register Chart.js components locally
 ChartJS.register(
@@ -68,6 +69,7 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
   const [selectedExamId, setSelectedExamId] = useState<string>('ALL');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'ALL' | 'IN_PROGRESS' | 'SUBMITTED' | 'FLAGGED'>('ALL');
   const [exportNotice, setExportNotice] = useState<string | null>(null);
+  const [reportCardSession, setReportCardSession] = useState<StudentSession | null>(null);
 
   // Canvas refs for Chart.js instances
   const scoreDistCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1010,14 +1012,24 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
                     </td>
 
                     <td className="py-3 px-3 text-right">
-                      {onSelectCandidateToReview && (
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => onSelectCandidateToReview(session.studentId)}
-                          className="px-2.5 py-1 bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white rounded-lg text-[11px] font-semibold transition-all border border-white/15"
+                          onClick={() => setReportCardSession(session)}
+                          className="px-2 py-1 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 hover:text-cyan-200 rounded-lg text-[11px] font-semibold transition-all border border-cyan-500/30 flex items-center gap-1 shadow-sm"
+                          title="View student report card and topic mastery analysis"
                         >
-                          Audit Logs
+                          <Award className="w-3 h-3 text-cyan-400" />
+                          <span>Report Card</span>
                         </button>
-                      )}
+                        {onSelectCandidateToReview && (
+                          <button
+                            onClick={() => onSelectCandidateToReview(session.studentId)}
+                            className="px-2 py-1 bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white rounded-lg text-[11px] font-semibold transition-all border border-white/15"
+                          >
+                            Audit Logs
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -1026,6 +1038,22 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Interactive Report Card Modal */}
+      {reportCardSession && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="w-full max-w-5xl my-auto">
+            <StudentReportCard
+              session={reportCardSession}
+              exam={exams.find((e) => e.id === reportCardSession.examId) || exams[0]}
+              cohortSessions={sessions}
+              onClose={() => setReportCardSession(null)}
+              currentTheme={currentTheme}
+              isModal={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

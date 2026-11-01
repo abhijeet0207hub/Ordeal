@@ -17,10 +17,12 @@ import {
   PlusCircle,
   Shuffle,
   BarChart3,
+  Award,
 } from 'lucide-react';
 import { StudentSession, Exam, ViolationRecord, GlassTheme } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
 import { ProctorAnalytics } from './ProctorAnalytics';
+import { StudentReportCard } from './StudentReportCard';
 
 interface ProctorDashboardProps {
   sessions: StudentSession[];
@@ -61,6 +63,7 @@ export const ProctorDashboard: React.FC<ProctorDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [proctorWarningInput, setProctorWarningInput] = useState('');
   const [warningFeedback, setWarningFeedback] = useState<string | null>(null);
+  const [reportCardSession, setReportCardSession] = useState<StudentSession | null>(null);
 
   const theme = GLASS_THEMES[currentTheme];
 
@@ -482,6 +485,14 @@ export const ProctorDashboard: React.FC<ProctorDashboardProps> = ({
                     Request Liveness
                   </button>
                 </div>
+
+                <button
+                  onClick={() => setReportCardSession(selectedSession)}
+                  className="w-full mt-2 py-2.5 px-3 bg-gradient-to-r from-cyan-600/30 to-blue-600/30 hover:from-cyan-600/50 hover:to-blue-600/50 border border-cyan-500/40 text-cyan-200 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm"
+                >
+                  <Award className="w-4 h-4 text-cyan-400" />
+                  <span>View Report Card & Analysis</span>
+                </button>
               </div>
             </div>
           ) : (
@@ -492,6 +503,22 @@ export const ProctorDashboard: React.FC<ProctorDashboardProps> = ({
         </div>
       </div>
       </>
+      )}
+
+      {/* Interactive Report Card Modal */}
+      {reportCardSession && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="w-full max-w-5xl my-auto">
+            <StudentReportCard
+              session={reportCardSession}
+              exam={exams.find((e) => e.id === reportCardSession.examId) || exams[0]}
+              cohortSessions={sessions}
+              onClose={() => setReportCardSession(null)}
+              currentTheme={currentTheme}
+              isModal={true}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -20,6 +20,7 @@ import {
 import { Exam, StudentSession, ViolationRecord, BoundingBox, GlassTheme } from '../types';
 import { LocalNeuralDetector } from '../utils/localNeuralDetector';
 import { GLASS_THEMES } from '../utils/theme';
+import { StudentReportCard } from './StudentReportCard';
 
 interface ExamRoomProps {
   exam: Exam;
@@ -377,91 +378,15 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
   const answeredCount = Object.keys(answers).length;
 
   if (isSubmitted) {
-    const earnedScore = session.score ?? 0;
-    const totalScore = session.totalScore ?? exam.totalMarks;
-    const isPassed = earnedScore >= exam.passingMarks && session.status !== 'DISQUALIFIED';
-
     return (
-      <div className="max-w-4xl mx-auto py-10 px-4 font-['Plus_Jakarta_Sans',sans-serif]">
-        <div className={`rounded-3xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-8 shadow-2xl text-center space-y-6`}>
-          <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center bg-white/10 border-2 border-emerald-500/50 shadow-lg shadow-emerald-500/20">
-            {session.status === 'DISQUALIFIED' ? (
-              <XCircle className="w-10 h-10 text-rose-500" />
-            ) : (
-              <CheckCircle className="w-10 h-10 text-emerald-400" />
-            )}
-          </div>
-
-          <div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight">
-              {session.status === 'DISQUALIFIED'
-                ? 'Session Disqualified — Academic Policy Violation'
-                : 'Examination Submitted Successfully'}
-            </h1>
-            <p className="text-xs text-slate-300 mt-2">
-              Candidate: <span className="text-white font-bold">{session.studentName}</span> ({session.studentId})
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto text-left">
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-              <span className="text-xs text-slate-400">Exam Score</span>
-              <p className="text-2xl font-bold text-white mt-1">
-                {earnedScore} <span className="text-xs text-slate-400">/ {totalScore}</span>
-              </p>
-              <span
-                className={`inline-block text-[10px] font-semibold mt-1 px-2 py-0.5 rounded-full ${
-                  isPassed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
-                }`}
-              >
-                {isPassed ? 'PASSED' : 'NOT PASSED'}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-              <span className="text-xs text-slate-400">Integrity Index</span>
-              <p
-                className={`text-2xl font-bold mt-1 ${
-                  session.integrityScore >= 80
-                    ? 'text-emerald-400'
-                    : session.integrityScore >= 60
-                    ? 'text-amber-400'
-                    : 'text-rose-400'
-                }`}
-              >
-                {session.integrityScore}%
-              </p>
-              <span className="text-[10px] text-slate-400 font-mono">TensorFlow.js Verified</span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-              <span className="text-xs text-slate-400">Violations Flagged</span>
-              <p
-                className={`text-2xl font-bold mt-1 ${
-                  session.violationCount === 0 ? 'text-emerald-400' : 'text-rose-400'
-                }`}
-              >
-                {session.violationCount}
-              </p>
-              <span className="text-[10px] text-slate-400">Tolerance: {exam.maxViolationsAllowed}</span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-              <span className="text-xs text-slate-400">Session Status</span>
-              <p className="text-sm font-bold text-slate-200 mt-2">{session.status}</p>
-              <span className="text-[10px] text-emerald-400 font-mono">Local ML Encrypted</span>
-            </div>
-          </div>
-
-          <div className="pt-4 flex justify-center gap-4">
-            <button
-              onClick={onExitExam}
-              className="px-6 py-3 bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 font-bold rounded-2xl text-xs transition-all"
-            >
-              Return to Candidate Portal
-            </button>
-          </div>
-        </div>
+      <div className="max-w-6xl mx-auto py-8 px-4 font-['Plus_Jakarta_Sans',sans-serif]">
+        <StudentReportCard
+          session={session}
+          exam={exam}
+          onExitExam={onExitExam}
+          currentTheme={currentTheme}
+          isModal={false}
+        />
       </div>
     );
   }
