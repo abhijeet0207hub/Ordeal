@@ -77,22 +77,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   return (
     <div className={`min-h-screen relative flex items-center justify-center p-4 bg-gradient-to-br ${themeConfig.previewGradient} ${themeConfig.textPrimary} overflow-hidden font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300`}>
-      {/* Quick Light / Dark Mode Toggle in Top-Right */}
-      <div className="fixed top-5 right-5 z-30 flex items-center gap-2">
+      {/* Stationary Light / Dark Mode Toggle in Top-Right */}
+      <div className="absolute top-5 right-5 z-30 flex items-center gap-2">
         <button
           type="button"
           onClick={handleToggleDarkMode}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border ${themeConfig.border} ${themeConfig.cardBg} ${themeConfig.glow} text-xs font-bold text-white transition-all`}
+          className={`w-44 flex items-center justify-center gap-2 px-3.5 py-2 rounded-2xl border ${themeConfig.border} ${themeConfig.cardBg} ${themeConfig.glow} text-xs font-bold text-white`}
         >
           {isLightMode ? (
             <>
-              <Moon className="w-4 h-4 text-slate-400" />
+              <Moon className="w-4 h-4 text-slate-400 shrink-0" />
               <span>Switch to Dark Mode</span>
             </>
           ) : (
             <>
-              <Sun className="w-4 h-4 text-amber-400" />
-              <span>Switch to Warm Alabaster (Light)</span>
+              <Sun className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Switch to Light Mode</span>
             </>
           )}
         </button>
