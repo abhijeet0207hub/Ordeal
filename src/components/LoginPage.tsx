@@ -10,7 +10,6 @@ import {
   IdCard,
   Sun,
   Moon,
-  BookOpen,
   AlertCircle,
   Chrome,
 } from 'lucide-react';
@@ -22,14 +21,12 @@ interface LoginPageProps {
   onLogin: (user: AuthUser) => void;
   currentTheme: GlassTheme;
   setCurrentTheme: (theme: GlassTheme) => void;
-  onOpenProjectReport?: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
   onLogin,
   currentTheme,
   setCurrentTheme,
-  onOpenProjectReport,
 }) => {
   const [role, setRole] = useState<'candidate' | 'proctor'>('candidate');
   const [studentId, setStudentId] = useState('2501920100016');
@@ -144,36 +141,24 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     <div
       className={`min-h-screen relative flex items-center justify-center p-4 bg-gradient-to-br ${themeConfig.previewGradient} ${themeConfig.textPrimary} overflow-hidden font-['Plus_Jakarta_Sans',sans-serif] transition-colors duration-300`}
     >
-      {/* Stationary Light / Dark Mode Toggle & Project Report Button in Top-Right */}
-      <div className="absolute top-5 right-5 z-30 flex items-center gap-2">
-        {onOpenProjectReport && (
-          <button
-            type="button"
-            onClick={onOpenProjectReport}
-            className={`flex items-center justify-center gap-2 px-3.5 py-2 rounded-2xl border ${themeConfig.border} ${themeConfig.cardBg} ${themeConfig.glow} text-xs font-bold text-white`}
-          >
-            <BookOpen className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Project Report & Tests</span>
-          </button>
+      {/* Stationary Light / Dark Mode Toggle in Top-Right */}
+      <button
+        type="button"
+        onClick={handleToggleDarkMode}
+        className={`absolute top-5 right-5 z-30 w-44 flex items-center justify-center gap-2 px-3.5 py-2 rounded-2xl border ${themeConfig.border} ${themeConfig.cardBg} ${themeConfig.glow} text-xs font-bold text-white`}
+      >
+        {isLightMode ? (
+          <>
+            <Moon className="w-4 h-4 text-slate-400 shrink-0" />
+            <span>Switch to Dark Mode</span>
+          </>
+        ) : (
+          <>
+            <Sun className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>Switch to Light Mode</span>
+          </>
         )}
-        <button
-          type="button"
-          onClick={handleToggleDarkMode}
-          className={`w-44 flex items-center justify-center gap-2 px-3.5 py-2 rounded-2xl border ${themeConfig.border} ${themeConfig.cardBg} ${themeConfig.glow} text-xs font-bold text-white`}
-        >
-          {isLightMode ? (
-            <>
-              <Moon className="w-4 h-4 text-slate-400 shrink-0" />
-              <span>Switch to Dark Mode</span>
-            </>
-          ) : (
-            <>
-              <Sun className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Switch to Light Mode</span>
-            </>
-          )}
-        </button>
-      </div>
+      </button>
 
       {/* Ambient Glass Glow Orbs */}
       {isLightMode ? (

@@ -10,7 +10,6 @@ import {
   BarChart3,
   Sun,
   Moon,
-  BookOpen,
 } from 'lucide-react';
 import { AuthUser, GlassTheme } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
@@ -25,7 +24,6 @@ interface NavbarProps {
   setCurrentTheme: (theme: GlassTheme) => void;
   onOpenDocScanner?: () => void;
   onOpenQuestionBuilder?: () => void;
-  onOpenProjectReport?: () => void;
   isExamInProgress?: boolean;
 }
 
@@ -39,7 +37,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentTheme,
   onOpenDocScanner,
   onOpenQuestionBuilder,
-  onOpenProjectReport,
   isExamInProgress,
 }) => {
   const theme = GLASS_THEMES[currentTheme];
@@ -169,18 +166,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </nav>
 
-          {/* Zone 3: Project Report, Light/Dark Mode Toggle, Theme Switcher & User Profile */}
+          {/* Zone 3: Light/Dark Mode Toggle, Theme Switcher & User Profile */}
           <div className="flex items-center gap-2 shrink-0">
-            {onOpenProjectReport && (
-              <button
-                onClick={onOpenProjectReport}
-                title="View Official Project Report PDF & Run Verification Suite"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-semibold text-emerald-300 transition-all whitespace-nowrap shrink-0"
-              >
-                <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden sm:inline text-[11px]">Report & Verify</span>
-              </button>
-            )}
 
             {/* Dedicated Light / Dark Mode Quick Toggle */}
             <button

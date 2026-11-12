@@ -22,6 +22,7 @@ import {
 import { StudentSession, Exam, ViolationRecord, GlassTheme } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
 import { ProctorAnalytics } from './ProctorAnalytics';
+import { ProctorRechartsPanel } from './ProctorRechartsPanel';
 import { StudentReportCard } from './StudentReportCard';
 
 interface ProctorDashboardProps {
@@ -53,6 +54,7 @@ export const ProctorDashboard: React.FC<ProctorDashboardProps> = ({
   const [selectedSession, setSelectedSession] = useState<StudentSession | null>(
     sessions[0] || null
   );
+  const [showRechartsOverview, setShowRechartsOverview] = useState<boolean>(true);
 
   React.useEffect(() => {
     if (initialTab) {
@@ -170,16 +172,28 @@ export const ProctorDashboard: React.FC<ProctorDashboardProps> = ({
             <BarChart3 className="w-4 h-4 text-emerald-400" />
             <span>Analytics & Trends</span>
             <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/30">
-              Chart.js
+              Recharts
             </span>
           </button>
         </div>
 
-        <div className="text-xs text-slate-400 hidden sm:flex items-center gap-2">
-          <span>Active View:</span>
-          <span className="font-semibold text-white">
-            {activeTab === 'surveillance' ? 'Live Candidate Surveillance' : 'Local Performance & Violation Analytics'}
-          </span>
+        <div className="flex items-center gap-3">
+          {activeTab === 'surveillance' && (
+            <button
+              type="button"
+              onClick={() => setShowRechartsOverview((prev) => !prev)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-all"
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>{showRechartsOverview ? 'Hide Recharts Telemetry' : 'Show Recharts Telemetry'}</span>
+            </button>
+          )}
+          <div className="text-xs text-slate-400 hidden sm:flex items-center gap-2">
+            <span>Active View:</span>
+            <span className="font-semibold text-white">
+              {activeTab === 'surveillance' ? 'Live Candidate Surveillance' : 'Recharts Performance & Violation Analytics'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -235,6 +249,15 @@ export const ProctorDashboard: React.FC<ProctorDashboardProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Interactive Recharts Performance, Pass/Fail & Per-Question Timing Panel */}
+      {showRechartsOverview && (
+        <ProctorRechartsPanel
+          sessions={sessions}
+          exams={exams}
+          currentTheme={currentTheme}
+        />
+      )}
 
       {/* Exam Randomization Toggles & Quick Settings Banner */}
       <div className={`rounded-2xl border ${theme.border} ${theme.cardBg} p-4 flex flex-wrap items-center justify-between gap-4`}>

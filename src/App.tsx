@@ -13,7 +13,6 @@ import { ViolationEvidenceReview } from './components/ViolationEvidenceReview';
 import { AntiSpoofingLab } from './components/AntiSpoofingLab';
 import { DocumentScannerModal } from './components/DocumentScannerModal';
 import { QuestionBuilderModal } from './components/QuestionBuilderModal';
-import { ProjectReportModal } from './components/ProjectReportModal';
 import { Exam, StudentSession, ViolationRecord, AuthUser, GlassTheme, ExamQuestion } from './types';
 import { GLASS_THEMES } from './utils/theme';
 import {
@@ -210,7 +209,6 @@ export default function App() {
   // Modals state
   const [isDocScannerOpen, setIsDocScannerOpen] = useState(false);
   const [isQuestionBuilderOpen, setIsQuestionBuilderOpen] = useState(false);
-  const [isProjectReportOpen, setIsProjectReportOpen] = useState(false);
 
   const themeConfig = GLASS_THEMES[currentTheme];
 
@@ -435,22 +433,14 @@ export default function App() {
 
   const pendingViolationsCount = violations.filter((v) => v.status === 'PENDING_REVIEW').length;
 
-  // Unauthenticated State: Render Glassmorphic Login Screen + Project Report Modal
+  // Unauthenticated State: Render Glassmorphic Login Screen
   if (!currentUser) {
     return (
-      <>
-        <LoginPage
-          onLogin={handleLogin}
-          currentTheme={currentTheme}
-          setCurrentTheme={setCurrentTheme}
-          onOpenProjectReport={() => setIsProjectReportOpen(true)}
-        />
-        <ProjectReportModal
-          isOpen={isProjectReportOpen}
-          onClose={() => setIsProjectReportOpen(false)}
-          currentTheme={currentTheme}
-        />
-      </>
+      <LoginPage
+        onLogin={handleLogin}
+        currentTheme={currentTheme}
+        setCurrentTheme={setCurrentTheme}
+      />
     );
   }
 
@@ -490,7 +480,6 @@ export default function App() {
         setCurrentTheme={setCurrentTheme}
         onOpenDocScanner={() => setIsDocScannerOpen(true)}
         onOpenQuestionBuilder={() => setIsQuestionBuilderOpen(true)}
-        onOpenProjectReport={() => setIsProjectReportOpen(true)}
         isExamInProgress={!!activeSession && activeSession.status === 'IN_PROGRESS'}
       />
 
@@ -572,13 +561,6 @@ export default function App() {
         onQuestionAdded={handleQuestionAdded}
         currentTheme={currentTheme}
         authToken={currentUser.authToken}
-      />
-
-      {/* Project Report & Verification Suite Modal */}
-      <ProjectReportModal
-        isOpen={isProjectReportOpen}
-        onClose={() => setIsProjectReportOpen(false)}
-        currentTheme={currentTheme}
       />
     </div>
   );

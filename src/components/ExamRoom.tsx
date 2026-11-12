@@ -41,6 +41,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
   const [session, setSession] = useState<StudentSession>(initialSession);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>(session.answers || {});
+  const [questionTimeSpent, setQuestionTimeSpent] = useState<Record<string, number>>(
+    session.questionTimeSpent || {}
+  );
   const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>({});
   const [timeRemaining, setTimeRemaining] = useState(exam.durationMinutes * 60);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -92,10 +95,17 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
     };
   }, [isNonCameraMode]);
 
-  // Timer countdown
+  // Timer countdown & per-question time tracking
   useEffect(() => {
     if (isSubmitted || timeRemaining <= 0) return;
     const interval = setInterval(() => {
+      const activeQId = exam.questions[currentQuestionIndex]?.id;
+      if (activeQId) {
+        setQuestionTimeSpent((prev) => ({
+          ...prev,
+          [activeQId]: (prev[activeQId] || 0) + 1,
+        }));
+      }
       setTimeRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
@@ -106,7 +116,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isSubmitted, timeRemaining]);
+  }, [isSubmitted, timeRemaining, currentQuestionIndex, exam.questions]);
 
   // Tab Switch & Visibility Change Detection (Browser Event Signal)
   useEffect(() => {
@@ -358,6 +368,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
           answers,
           canonicalAnswers,
           presentedOptionOrder,
+          questionTimeSpent,
         }),
       });
       const data = await res.json();
@@ -367,6 +378,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
           answers,
           canonicalAnswers,
           presentedOptionOrder,
+          questionTimeSpent,
         };
         setSession(updatedSession);
         if (onSessionSubmitted) {
@@ -391,6 +403,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
           answers,
           canonicalAnswers,
           presentedOptionOrder,
+          questionTimeSpent,
           score: earnedScore,
           totalScore,
         };

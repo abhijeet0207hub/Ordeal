@@ -139,6 +139,10 @@ export interface StudentSession {
    * Audit map recording how options were permuted for each question.
    */
   presentedOptionOrder?: Record<string, number[]>;
+  /**
+   * Seconds spent on each question (keyed by question.id).
+   */
+  questionTimeSpent?: Record<string, number>;
   consentAcceptedAt?: string;
   accommodationMode?: AccommodationMode;
   score?: number;
@@ -179,12 +183,3 @@ export interface LivenessChallenge {
   iconName: string;
 }
 
-export interface VerificationTestResult {
-  id: string;
-  priority: 'P0' | 'P1' | 'P2';
-  category: string;
-  title: string;
-  passed: boolean;
-  details: string;
-  durationMs: number;
-}

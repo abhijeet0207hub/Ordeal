@@ -119,6 +119,7 @@ interface StudentSession {
   answers: Record<string, number>;
   canonicalAnswers?: Record<string, number>;
   presentedOptionOrder?: Record<string, number[]>;
+  questionTimeSpent?: Record<string, number>;
   consentAcceptedAt?: string;
   accommodationMode?: 'STANDARD_CAMERA' | 'NON_CAMERA_ACCESSIBLE';
   score?: number;
@@ -405,8 +406,11 @@ const defaultSessionsSeed: StudentSession[] = [
     examTitle: 'Advanced Computer Networks & Distributed Systems',
     startedAt: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
     status: 'FLAGGED',
-    answers: { q1: 2, q2: 1, q3: 0 },
-    canonicalAnswers: { q1: 2, q2: 1, q3: 0 },
+    answers: { q1: 2, q2: 1, q3: 1, q4: 0, q5: 1 },
+    canonicalAnswers: { q1: 2, q2: 1, q3: 1, q4: 0, q5: 1 },
+    questionTimeSpent: { q1: 145, q2: 190, q3: 310, q4: 165, q5: 225 },
+    score: 40,
+    totalScore: 50,
     consentAcceptedAt: new Date(Date.now() - 1000 * 60 * 36).toISOString(),
     accommodationMode: 'STANDARD_CAMERA',
     integrityScore: 68,
@@ -425,8 +429,11 @@ const defaultSessionsSeed: StudentSession[] = [
     examTitle: 'Advanced Computer Networks & Distributed Systems',
     startedAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
     status: 'IN_PROGRESS',
-    answers: { q1: 2, q2: 1 },
-    canonicalAnswers: { q1: 2, q2: 1 },
+    answers: { q1: 2, q2: 1, q3: 0 },
+    canonicalAnswers: { q1: 2, q2: 1, q3: 0 },
+    questionTimeSpent: { q1: 120, q2: 175, q3: 295, q4: 95 },
+    score: 20,
+    totalScore: 50,
     consentAcceptedAt: new Date(Date.now() - 1000 * 60 * 21).toISOString(),
     accommodationMode: 'STANDARD_CAMERA',
     integrityScore: 78,
@@ -444,9 +451,13 @@ const defaultSessionsSeed: StudentSession[] = [
     examId: 'exam-cs-401',
     examTitle: 'Advanced Computer Networks & Distributed Systems',
     startedAt: new Date(Date.now() - 1000 * 60 * 40).toISOString(),
-    status: 'IN_PROGRESS',
-    answers: { q1: 2, q2: 1, q3: 1, q4: 0 },
-    canonicalAnswers: { q1: 2, q2: 1, q3: 1, q4: 0 },
+    submittedAt: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
+    status: 'SUBMITTED',
+    answers: { q1: 2, q2: 1, q3: 1, q4: 0, q5: 0 },
+    canonicalAnswers: { q1: 2, q2: 1, q3: 1, q4: 0, q5: 0 },
+    questionTimeSpent: { q1: 110, q2: 155, q3: 260, q4: 140, q5: 195 },
+    score: 50,
+    totalScore: 50,
     consentAcceptedAt: new Date(Date.now() - 1000 * 60 * 41).toISOString(),
     accommodationMode: 'STANDARD_CAMERA',
     integrityScore: 99,
@@ -464,14 +475,66 @@ const defaultSessionsSeed: StudentSession[] = [
     examId: 'exam-cs-401',
     examTitle: 'Advanced Computer Networks & Distributed Systems',
     startedAt: new Date(Date.now() - 1000 * 60 * 28).toISOString(),
-    status: 'IN_PROGRESS',
-    answers: { q1: 2, q2: 1, q3: 1 },
-    canonicalAnswers: { q1: 2, q2: 1, q3: 1 },
+    submittedAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    status: 'SUBMITTED',
+    answers: { q1: 2, q2: 1, q3: 1, q4: 2, q5: 0 },
+    canonicalAnswers: { q1: 2, q2: 1, q3: 1, q4: 2, q5: 0 },
+    questionTimeSpent: { q1: 135, q2: 165, q3: 280, q4: 185, q5: 210 },
+    score: 40,
+    totalScore: 50,
     consentAcceptedAt: new Date(Date.now() - 1000 * 60 * 29).toISOString(),
     accommodationMode: 'NON_CAMERA_ACCESSIBLE',
     integrityScore: 97,
     violationCount: 0,
     violations: [],
+    currentStatus: 'NORMAL',
+    lastPing: new Date().toISOString(),
+  },
+  {
+    sessionId: 'sess-803',
+    studentId: 'std-7120',
+    studentName: 'Marcus Vance',
+    studentEmail: 'm.vance@univ.edu',
+    studentAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+    examId: 'exam-ai-602',
+    examTitle: 'Computer Vision & Deep Learning Security',
+    startedAt: new Date(Date.now() - 1000 * 60 * 26).toISOString(),
+    submittedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    status: 'FLAGGED',
+    answers: { q201: 0, q202: 1, q203: 2 },
+    canonicalAnswers: { q201: 0, q202: 1, q203: 2 },
+    questionTimeSpent: { q201: 165, q202: 240, q203: 290 },
+    score: 10,
+    totalScore: 30,
+    consentAcceptedAt: new Date(Date.now() - 1000 * 60 * 27).toISOString(),
+    accommodationMode: 'STANDARD_CAMERA',
+    integrityScore: 62,
+    violationCount: 1,
+    violations: [defaultViolationsSeed[2]],
+    currentStatus: 'CRITICAL',
+    lastPing: new Date().toISOString(),
+  },
+  {
+    sessionId: 'sess-804',
+    studentId: 'std-3391',
+    studentName: 'Elena Rostova',
+    studentEmail: 'e.rostova@univ.edu',
+    studentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    examId: 'exam-ai-602',
+    examTitle: 'Computer Vision & Deep Learning Security',
+    startedAt: new Date(Date.now() - 1000 * 60 * 24).toISOString(),
+    submittedAt: new Date(Date.now() - 1000 * 60 * 3).toISOString(),
+    status: 'SUBMITTED',
+    answers: { q201: 1, q202: 1, q203: 1 },
+    canonicalAnswers: { q201: 1, q202: 1, q203: 1 },
+    questionTimeSpent: { q201: 130, q202: 205, q203: 235 },
+    score: 30,
+    totalScore: 30,
+    consentAcceptedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+    accommodationMode: 'STANDARD_CAMERA',
+    integrityScore: 88,
+    violationCount: 1,
+    violations: [defaultViolationsSeed[3]],
     currentStatus: 'NORMAL',
     lastPing: new Date().toISOString(),
   },
@@ -1058,7 +1121,7 @@ app.post('/api/sessions/ping', (req: Request, res: Response) => {
  * against the server's canonical `exam.questions` so option randomization never produces score mismatches.
  */
 app.post('/api/sessions/submit', (req: Request, res: Response) => {
-  const { sessionId, answers, canonicalAnswers, presentedOptionOrder } = req.body;
+  const { sessionId, answers, canonicalAnswers, presentedOptionOrder, questionTimeSpent } = req.body;
   const session = sessionsDb.find((s) => s.sessionId === sessionId);
   if (!session) {
     return res.status(404).json({ success: false, error: 'Session not found' });
@@ -1069,6 +1132,9 @@ app.post('/api/sessions/submit', (req: Request, res: Response) => {
   session.answers = answers || session.answers || {};
   if (presentedOptionOrder) {
     session.presentedOptionOrder = presentedOptionOrder;
+  }
+  if (questionTimeSpent && typeof questionTimeSpent === 'object') {
+    session.questionTimeSpent = questionTimeSpent;
   }
 
   // Resolve canonical answers deterministically
@@ -1351,172 +1417,7 @@ Return JSON with:
 });
 
 // ==========================================
-// 7. AUTOMATED VERIFICATION SUITE API (P2)
-// ==========================================
-app.post('/api/verify-suite', (_req: Request, res: Response) => {
-  const results: Array<{
-    id: string;
-    priority: 'P0' | 'P1' | 'P2';
-    category: string;
-    title: string;
-    passed: boolean;
-    details: string;
-    durationMs: number;
-  }> = [];
-
-  // Test 1: P0 Canonical Grading Under 50 Fisher-Yates Option Permutations
-  const t1Start = Date.now();
-  const refExam = examsDb.find((e) => e.id === 'exam-cs-401') || defaultExamsSeed[0];
-  let allPermutationsMatch = true;
-  for (let run = 0; run < 50; run++) {
-    // Permute options for every question and select the true correct answer in display space
-    const canonicalAnswers: Record<string, number> = {};
-    for (const q of refExam.questions) {
-      const indices = [0, 1, 2, 3];
-      for (let i = indices.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [indices[i], indices[j]] = [indices[j], indices[i]];
-      }
-      const displayedCorrectIdx = indices.indexOf(q.correctAnswer);
-      // Translate displayed selection back through indices map
-      const mappedCanonical = indices[displayedCorrectIdx];
-      canonicalAnswers[q.id] = mappedCanonical;
-    }
-    const earned = refExam.questions.reduce(
-      (sum, q) => sum + (canonicalAnswers[q.id] === q.correctAnswer ? q.points : 0),
-      0
-    );
-    if (earned !== refExam.totalMarks) {
-      allPermutationsMatch = false;
-      break;
-    }
-  }
-  results.push({
-    id: 'test-p0-shuffle-grading',
-    priority: 'P0',
-    category: 'Correctness (Table 5.6)',
-    title: 'Canonical Option-ID Grading Across 50 Random Shuffle Orders',
-    passed: allPermutationsMatch,
-    details: allPermutationsMatch
-      ? '50/50 randomized option permutations matched the canonical server oracle score (50/50 pts) with zero index drift.'
-      : 'Mismatch detected in shuffled option grading.',
-    durationMs: Math.max(1, Date.now() - t1Start),
-  });
-
-  // Test 2: P0 Server Authentication & RBAC Token Verification
-  const t2Start = Date.now();
-  const candidateToken = createSignedToken({
-    id: 'usr-2501920100016',
-    name: 'Abhijeet Singh',
-    email: 'abhijeet@univ.edu',
-    role: 'candidate',
-    rollNumber: '2501920100016',
-  });
-  const proctorToken = createSignedToken({
-    id: 'prc-9901',
-    name: 'Chief Proctor Henderson',
-    email: 'proctor.henderson@univ.edu',
-    role: 'proctor',
-    staffId: 'PRC-801',
-  });
-  const verifiedCandidate = verifySignedToken(candidateToken);
-  const verifiedProctor = verifySignedToken(proctorToken);
-  const forgedTokenRejected = verifySignedToken(candidateToken + 'tampered') === null;
-  const rbacPassed =
-    verifiedCandidate?.role === 'candidate' &&
-    verifiedProctor?.role === 'proctor' &&
-    forgedTokenRejected;
-  results.push({
-    id: 'test-p0-auth-rbac',
-    priority: 'P0',
-    category: 'Access Control (Table 5.6)',
-    title: 'HMAC-SHA256 Session Token Verification & Role Isolation',
-    passed: rbacPassed,
-    details: rbacPassed
-      ? 'Candidate (2501920100016) and Proctor (PRC-801) tokens verified; tampered token signatures rejected.'
-      : 'Token signature or role check failed.',
-    durationMs: Math.max(1, Date.now() - t2Start),
-  });
-
-  // Test 3: P0 Durable Disk Persistence Recovery Across Restart
-  const t3Start = Date.now();
-  persistDurableStore();
-  const diskExists = fs.existsSync(STORE_PATH);
-  let diskRoundtripOk = false;
-  if (diskExists) {
-    const raw = JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8'));
-    diskRoundtripOk =
-      Array.isArray(raw.exams) &&
-      raw.exams.length === examsDb.length &&
-      Array.isArray(raw.sessions);
-  }
-  results.push({
-    id: 'test-p0-durable-persistence',
-    priority: 'P0',
-    category: 'Durable Records (Table 5.6)',
-    title: 'Server Restart Recovery & Disk Store Integrity',
-    passed: diskRoundtripOk,
-    details: diskRoundtripOk
-      ? `Verified durable disk store (.ordeal-data/store.json) with ${examsDb.length} exams, ${sessionsDb.length} sessions, and ${violationsDb.length} incident records.`
-      : 'Disk store verification failed.',
-    durationMs: Math.max(1, Date.now() - t3Start),
-  });
-
-  // Test 4: P0 Privacy Consent & Snapshot Deletion Audit
-  const t4Start = Date.now();
-  const sampleSessionHasConsent = sessionsDb.some((s) => Boolean(s.consentAcceptedAt));
-  results.push({
-    id: 'test-p0-privacy-retention',
-    priority: 'P0',
-    category: 'Privacy & Media Governance (Table 5.6)',
-    title: 'Explicit Media Consent Timestamp & Snapshot Purge Controls',
-    passed: sampleSessionHasConsent,
-    details:
-      'Pre-exam consent timestamps recorded on sessions; DELETE /api/violations/:id/snapshot and bulk purge endpoints active.',
-    durationMs: Math.max(1, Date.now() - t4Start),
-  });
-
-  // Test 5: P1 Honest Anti-Spoofing Unavailable State
-  const t5Start = Date.now();
-  const honestFallbackVerified = !geminiClient;
-  results.push({
-    id: 'test-p1-honest-fallback',
-    priority: 'P1',
-    category: 'Fallback Honesty (Table 5.6)',
-    title: 'Non-Fabricated Anti-Spoof Fallback Semantics',
-    passed: true,
-    details: honestFallbackVerified
-      ? 'Verified: With GEMINI_API_KEY unconfigured, /api/verify-anti-spoof returns UNAVAILABLE_NEEDS_HUMAN_REVIEW (evaluatedByAi: false) instead of a synthetic passing score.'
-      : 'Verified: External Gemini AI configured and active with explicit fallback guard.',
-    durationMs: Math.max(1, Date.now() - t5Start),
-  });
-
-  // Test 6: P2 Reproducible Dependency Alignment & Equitable Access Mode
-  const t6Start = Date.now();
-  const hasAccessibleSession = sessionsDb.some((s) => s.accommodationMode === 'NON_CAMERA_ACCESSIBLE');
-  results.push({
-    id: 'test-p2-equitable-access',
-    priority: 'P2',
-    category: 'Equitable Access & Reproducibility (Table 5.6)',
-    title: 'Non-Camera Accommodation Path & Vite 8 / esbuild Peer Alignment',
-    passed: hasAccessibleSession,
-    details:
-      'Non-camera accessible accommodation mode verified in session store; package.json esbuild range aligned to ^0.27.0.',
-    durationMs: Math.max(1, Date.now() - t6Start),
-  });
-
-  res.json({
-    success: true,
-    executedAt: new Date().toISOString(),
-    author: 'Abhijeet Singh',
-    rollNumber: '2501920100016',
-    repositoryRevision: '86d1e38-remediated',
-    results,
-  });
-});
-
-// ==========================================
-// 8. DIAGNOSTIC ENGINE INFO
+// 7. DIAGNOSTIC ENGINE INFO
 // ==========================================
 app.get('/api/diagnostics', (_req: Request, res: Response) => {
   res.json({

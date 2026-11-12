@@ -33,6 +33,7 @@ import {
 import { StudentSession, ViolationRecord, Exam, GlassTheme, ViolationType } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
 import { StudentReportCard } from './StudentReportCard';
+import { ProctorRechartsPanel } from './ProctorRechartsPanel';
 
 // Register Chart.js components locally
 ChartJS.register(
@@ -831,6 +832,15 @@ export const ProctorAnalytics: React.FC<ProctorAnalyticsProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Recharts Interactive Visualizations: Performance, Pass/Fail Ratios & Per-Question Time Spent */}
+      <ProctorRechartsPanel
+        sessions={filteredSessions}
+        exams={exams}
+        currentTheme={currentTheme}
+        selectedExamFilter={selectedExamId}
+        onSelectExamFilter={setSelectedExamId}
+      />
 
       {/* 2x2 Interactive Charts Grid with Chart.js */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
