@@ -1,0 +1,107 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated Candidate or Proctor user profile in Ordeal.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID or canonical user ID" },
+        "name": { "type": "string", "description": "Full display name" },
+        "email": { "type": "string", "format": "email", "description": "Email address" },
+        "role": { "type": "string", "enum": ["candidate", "proctor"], "description": "Assigned portal role" },
+        "rollNumber": { "type": "string", "description": "Academic roll number (e.g. 2501920100016)" },
+        "studentId": { "type": "string", "description": "Candidate enrollment ID" },
+        "staffId": { "type": "string", "description": "Proctor supervisory ID" },
+        "department": { "type": "string", "description": "Academic department" },
+        "avatarUrl": { "type": "string", "description": "Profile avatar URL" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last profile update ISO timestamp" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Exam": {
+      "title": "Exam",
+      "description": "Canonical examination definition with questions and security settings.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Canonical exam ID" },
+        "title": { "type": "string", "description": "Examination title" },
+        "code": { "type": "string", "description": "Course/exam code" },
+        "category": { "type": "string", "description": "Academic subject category" },
+        "durationMinutes": { "type": "number", "description": "Duration in minutes" },
+        "totalMarks": { "type": "number", "description": "Maximum possible score" },
+        "passingMarks": { "type": "number", "description": "Minimum passing score" },
+        "maxViolationsAllowed": { "type": "number", "description": "Maximum warnings before flagging" },
+        "questions": { "type": "array", "description": "Array of canonical ExamQuestion objects" },
+        "securitySettings": { "type": "object", "description": "Proctoring and randomization configuration" }
+      },
+      "required": ["id", "title", "code", "durationMinutes", "totalMarks", "passingMarks"]
+    },
+    "StudentSession": {
+      "title": "StudentSession",
+      "description": "Candidate examination attempt record with canonical answers and integrity telemetry.",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string", "description": "Unique session identifier" },
+        "uid": { "type": "string", "description": "Candidate UID" },
+        "studentId": { "type": "string", "description": "Candidate student ID" },
+        "rollNumber": { "type": "string", "description": "Academic roll number" },
+        "studentName": { "type": "string", "description": "Candidate full name" },
+        "studentEmail": { "type": "string", "description": "Candidate email" },
+        "examId": { "type": "string", "description": "Associated canonical exam ID" },
+        "examTitle": { "type": "string", "description": "Associated exam title" },
+        "startedAt": { "type": "string", "format": "date-time", "description": "Session start timestamp" },
+        "submittedAt": { "type": "string", "format": "date-time", "description": "Submission timestamp" },
+        "status": { "type": "string", "enum": ["IN_PROGRESS", "SUBMITTED", "DISQUALIFIED", "FLAGGED"] },
+        "answers": { "type": "object", "description": "Displayed option index answers" },
+        "canonicalAnswers": { "type": "object", "description": "Canonical unshuffled option index answers" },
+        "score": { "type": "number", "description": "Earned points" },
+        "totalScore": { "type": "number", "description": "Total possible points" },
+        "integrityScore": { "type": "number", "description": "Integrity score 0-100" },
+        "violationCount": { "type": "number", "description": "Number of logged incidents" },
+        "consentAcceptedAt": { "type": "string", "description": "ISO timestamp when candidate accepted privacy notice" },
+        "accommodationMode": { "type": "string", "enum": ["STANDARD_CAMERA", "NON_CAMERA_ACCESSIBLE"] }
+      },
+      "required": ["sessionId", "studentId", "studentName", "examId", "startedAt", "status"]
+    },
+    "ViolationRecord": {
+      "title": "ViolationRecord",
+      "description": "Proctoring incident record with signal provenance and snapshot retention state.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique incident ID" },
+        "sessionId": { "type": "string", "description": "Associated session ID" },
+        "studentId": { "type": "string", "description": "Candidate ID" },
+        "studentName": { "type": "string", "description": "Candidate name" },
+        "examId": { "type": "string", "description": "Exam ID" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Incident timestamp" },
+        "violationType": { "type": "string", "description": "Type of incident" },
+        "severity": { "type": "string", "enum": ["CRITICAL", "WARNING", "INFO"] },
+        "confidence": { "type": "number", "description": "Signal confidence 0-1" },
+        "signalSource": { "type": "string", "enum": ["TFJS_OBJECT_DETECTOR", "PIXEL_AUDIO_HEURISTIC", "BROWSER_VISIBILITY_EVENT"] },
+        "snapshotUrl": { "type": "string", "description": "Base64 snapshot or empty if purged" },
+        "snapshotDeletedAt": { "type": "string", "description": "Timestamp when snapshot was purged under retention policy" },
+        "status": { "type": "string", "enum": ["PENDING_REVIEW", "UPHELD", "DISMISSED"] },
+        "proctorNotes": { "type": "string", "description": "Proctor adjudication notes" }
+      },
+      "required": ["id", "sessionId", "studentId", "violationType", "severity", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profiles keyed by Firebase Auth UID"
+    },
+    "/exams/{examId}": {
+      "schema": { "$ref": "#/entities/Exam" },
+      "description": "Canonical examination definitions"
+    },
+    "/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/StudentSession" },
+      "description": "Candidate examination attempts and scores"
+    },
+    "/violations/{violationId}": {
+      "schema": { "$ref": "#/entities/ViolationRecord" },
+      "description": "Incident logs and evidence review records"
+    }
+  }
+}

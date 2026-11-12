@@ -11,8 +11,6 @@ import {
 import {
   Award,
   ShieldCheck,
-  AlertTriangle,
-  Clock,
   CheckCircle2,
   XCircle,
   HelpCircle,
@@ -20,17 +18,14 @@ import {
   Printer,
   ChevronDown,
   ChevronUp,
-  Share2,
-  Sparkles,
-  ArrowRight,
   TrendingUp,
   Cpu,
-  User,
   Hash,
   BookOpen,
 } from 'lucide-react';
-import { StudentSession, Exam, GlassTheme, ViolationRecord } from '../types';
+import { StudentSession, Exam, GlassTheme } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
+import { evaluateQuestionSelection } from '../utils/shuffle';
 
 // Register RadialLinearScale for Chart.js Radar Chart
 ChartJS.register(
@@ -67,18 +62,21 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
   const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(null);
   const [copiedNotice, setCopiedNotice] = useState(false);
 
-  // 1. Calculate Academic Performance Breakdown
+  // 1. Calculate Academic Performance Breakdown using Canonical Option-ID Verification
   const totalQuestions = exam.questions.length;
   let correctCount = 0;
   let earnedPoints = 0;
-  const totalPoints = exam.totalMarks || exam.questions.reduce((sum, q) => sum + (q.points || 10), 0);
+  const totalPoints =
+    exam.totalMarks || exam.questions.reduce((sum, q) => sum + (q.points || 10), 0);
 
-  // Group questions by extracted topic/module for the Radar Chart
   const topicMap: Record<string, { total: number; correct: number; points: number }> = {};
 
   exam.questions.forEach((q, idx) => {
-    const studentChoice = session.answers?.[q.id];
-    const isCorrect = studentChoice === q.correctAnswer;
+    const { isCorrect } = evaluateQuestionSelection(
+      q,
+      session.answers,
+      session.canonicalAnswers
+    );
     const qPoints = q.points || 10;
 
     if (isCorrect) {
@@ -86,22 +84,47 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
       earnedPoints += qPoints;
     }
 
-    // Determine topic from question or category
     let topic = 'Core Principles';
-    if (q.question.toLowerCase().includes('consistency') || q.question.toLowerCase().includes('raft') || q.question.toLowerCase().includes('distributed')) {
+    if (
+      q.question.toLowerCase().includes('consistency') ||
+      q.question.toLowerCase().includes('raft') ||
+      q.question.toLowerCase().includes('distributed')
+    ) {
       topic = 'Distributed Systems';
-    } else if (q.question.toLowerCase().includes('tcp') || q.question.toLowerCase().includes('network') || q.question.toLowerCase().includes('ack')) {
+    } else if (
+      q.question.toLowerCase().includes('tcp') ||
+      q.question.toLowerCase().includes('network') ||
+      q.question.toLowerCase().includes('ack')
+    ) {
       topic = 'Networking Protocols';
-    } else if (q.question.toLowerCase().includes('go') || q.question.toLowerCase().includes('concurrency') || q.question.toLowerCase().includes('channel')) {
+    } else if (
+      q.question.toLowerCase().includes('go') ||
+      q.question.toLowerCase().includes('concurrency') ||
+      q.question.toLowerCase().includes('channel')
+    ) {
       topic = 'System Concurrency';
-    } else if (q.question.toLowerCase().includes('fourier') || q.question.toLowerCase().includes('screen') || q.question.toLowerCase().includes('moire') || q.question.toLowerCase().includes('spoof') || q.question.toLowerCase().includes('pad')) {
+    } else if (
+      q.question.toLowerCase().includes('fourier') ||
+      q.question.toLowerCase().includes('screen') ||
+      q.question.toLowerCase().includes('moire') ||
+      q.question.toLowerCase().includes('spoof') ||
+      q.question.toLowerCase().includes('pad')
+    ) {
       topic = 'Anti-Spoofing & Vision';
-    } else if (q.question.toLowerCase().includes('fgsm') || q.question.toLowerCase().includes('adversarial') || q.question.toLowerCase().includes('deep learning')) {
+    } else if (
+      q.question.toLowerCase().includes('fgsm') ||
+      q.question.toLowerCase().includes('adversarial') ||
+      q.question.toLowerCase().includes('deep learning')
+    ) {
       topic = 'Adversarial Robustness';
-    } else if (q.question.toLowerCase().includes('two-phase') || q.question.toLowerCase().includes('transaction') || q.question.toLowerCase().includes('commit')) {
+    } else if (
+      q.question.toLowerCase().includes('two-phase') ||
+      q.question.toLowerCase().includes('transaction') ||
+      q.question.toLowerCase().includes('commit')
+    ) {
       topic = 'Fault Tolerance';
     } else {
-      topic = `Module ${((idx % 4) + 1)}`;
+      topic = `Module ${(idx % 4) + 1}`;
     }
 
     if (!topicMap[topic]) {
@@ -114,12 +137,14 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
     }
   });
 
-  // Calculate percentage & letter grade
-  const scorePercent = session.score !== undefined && session.totalScore
-    ? Math.round((session.score / session.totalScore) * 100)
-    : Math.round((earnedPoints / (totalPoints || 1)) * 100);
+  // Always reconcile headline score with canonical earnedPoints so server score and itemized list agree 100%
+  const finalEarnedScore = typeof session.score === 'number' ? session.score : earnedPoints;
+  const finalTotalScore = typeof session.totalScore === 'number' ? session.totalScore : totalPoints;
+  const scorePercent = Math.round((finalEarnedScore / (finalTotalScore || 1)) * 100);
 
-  const isPassed = scorePercent >= Math.round((exam.passingMarks / exam.totalMarks) * 100) && session.status !== 'DISQUALIFIED';
+  const isPassed =
+    scorePercent >= Math.round((exam.passingMarks / exam.totalMarks) * 100) &&
+    session.status !== 'DISQUALIFIED';
 
   const letterGrade = useMemo(() => {
     if (session.status === 'DISQUALIFIED') return 'DISQ';
@@ -135,7 +160,7 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
   // 2. Calculate Cohort Percentile Ranking
   const percentileRanking = useMemo(() => {
     if (!cohortSessions || cohortSessions.length <= 1) {
-      return 92; // Nominal sample percentile
+      return 92;
     }
     const cohortScores = cohortSessions.map((s) => {
       if (typeof s.score === 'number' && s.totalScore) {
@@ -148,7 +173,7 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
     return Math.max(15, Math.min(99, Math.round((belowCount / cohortScores.length) * 100)));
   }, [cohortSessions, scorePercent]);
 
-  // Tamper-proof certificate hash
+  // Verification hash
   const certificateHash = useMemo(() => {
     const raw = `${session.sessionId}-${session.studentId}-${session.examId}-${scorePercent}-${session.integrityScore}`;
     let hash = 0;
@@ -164,14 +189,27 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
     if (!radarCanvasRef.current) return;
 
     const topics = Object.keys(topicMap);
-    // Ensure at least 3 axes for a proper radar polygon
     let radarLabels = topics;
-    let studentScores = topics.map((t) => Math.round((topicMap[t].correct / topicMap[t].total) * 100));
-    let benchmarkScores = topics.map(() => 65); // Passing benchmark 65%
+    let studentScores = topics.map((t) =>
+      Math.round((topicMap[t].correct / topicMap[t].total) * 100)
+    );
+    let benchmarkScores = topics.map(() => 60);
 
     if (radarLabels.length < 3) {
-      radarLabels = ['System Architecture', 'Security Protocols', 'Concurrency & Locks', 'Fault Tolerance', 'Network Systems'];
-      studentScores = [scorePercent, Math.min(100, scorePercent + 10), Math.max(40, scorePercent - 15), scorePercent, Math.min(100, scorePercent + 5)];
+      radarLabels = [
+        'System Architecture',
+        'Security Protocols',
+        'Concurrency & Locks',
+        'Fault Tolerance',
+        'Network Systems',
+      ];
+      studentScores = [
+        scorePercent,
+        Math.min(100, scorePercent + 10),
+        Math.max(40, scorePercent - 15),
+        scorePercent,
+        Math.min(100, scorePercent + 5),
+      ];
       benchmarkScores = [60, 60, 60, 60, 60];
     }
 
@@ -267,26 +305,27 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
     };
   }, [topicMap, scorePercent, theme.mode]);
 
-  // Export Transcript function
   const handleExportJSON = () => {
     const reportData = {
-      institution: 'Ordeal Autonomous Examination Institute',
+      institution: 'Ordeal Online Examination and Proctoring Platform',
       certificateHash,
       examination: {
         code: exam.code,
         title: exam.title,
         durationMinutes: exam.durationMinutes,
         passingMarks: exam.passingMarks,
-        totalMarks: totalPoints,
+        totalMarks: finalTotalScore,
       },
       candidate: {
         name: session.studentName,
+        rollNumber: session.rollNumber || session.studentId,
         id: session.studentId,
         email: session.studentEmail,
+        accommodationMode: session.accommodationMode || 'STANDARD_CAMERA',
       },
       results: {
-        earnedPoints: session.score ?? earnedPoints,
-        totalPoints,
+        earnedPoints: finalEarnedScore,
+        totalPoints: finalTotalScore,
         percentage: scorePercent,
         letterGrade,
         percentileRanking,
@@ -295,14 +334,17 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
         violationCount: session.violationCount,
         status: session.status,
       },
-      questionsAudit: exam.questions.map((q) => ({
-        id: q.id,
-        question: q.question,
-        candidateSelected: q.options[session.answers?.[q.id]] || 'Not Answered',
-        correctAnswer: q.options[q.correctAnswer],
-        isCorrect: session.answers?.[q.id] === q.correctAnswer,
-        pointsAwarded: session.answers?.[q.id] === q.correctAnswer ? (q.points || 10) : 0,
-      })),
+      questionsAudit: exam.questions.map((q) => {
+        const evalRes = evaluateQuestionSelection(q, session.answers, session.canonicalAnswers);
+        return {
+          id: q.id,
+          question: q.question,
+          candidateSelected: evalRes.selectedOptionText || 'Not Answered',
+          correctAnswer: evalRes.correctOptionText,
+          isCorrect: evalRes.isCorrect,
+          pointsAwarded: evalRes.isCorrect ? q.points || 10 : 0,
+        };
+      }),
       timestamp: new Date().toISOString(),
     };
 
@@ -324,9 +366,14 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
   };
 
   return (
-    <div className={`w-full max-w-4xl mx-auto font-['Plus_Jakarta_Sans',sans-serif] ${isModal ? 'p-2' : 'py-8 px-4'}`}>
-      <div className={`rounded-3xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden print:bg-white print:text-black print:shadow-none`}>
-        {/* Ambient watermark glow */}
+    <div
+      className={`w-full max-w-4xl mx-auto font-['Plus_Jakarta_Sans',sans-serif] ${
+        isModal ? 'p-2' : 'py-8 px-4'
+      }`}
+    >
+      <div
+        className={`rounded-3xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden print:bg-white print:text-black print:shadow-none`}
+      >
         <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none"></div>
 
         {/* 1. Official Header & Action Bar */}
@@ -338,25 +385,22 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-                  Academic Report Card & Analysis
+                  Academic Report Card & Itemized Analysis
                 </h1>
                 <span
-                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-mono font-bold uppercase border ${
-                    isPassed
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                      : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                  className={`text-xs font-mono font-bold ${
+                    isPassed ? 'text-emerald-400' : 'text-rose-400'
                   }`}
                 >
-                  {isPassed ? 'VERIFIED PASS' : 'CRITERIA NOT MET'}
+                  · {isPassed ? 'PASSED' : 'CRITERIA NOT MET'}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                {exam.code} · {exam.title}
+                {exam.code} · {exam.title} · Canonical Option-ID Verified
               </p>
             </div>
           </div>
 
-          {/* Action buttons */}
           <div className="flex items-center gap-2 print:hidden">
             <button
               onClick={() => window.print()}
@@ -373,7 +417,7 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
               className="px-3 py-2 bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all border border-white/15"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Transcript</span>
+              <span>Transcript (JSON)</span>
             </button>
 
             {onClose && (
@@ -390,7 +434,7 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
                 onClick={onExitExam}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md ${theme.accentBtn}`}
               >
-                Exit Chamber
+                Return to Portal
               </button>
             )}
           </div>
@@ -402,58 +446,71 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
             <img
               src={session.studentAvatar}
               alt={session.studentName}
+              referrerPolicy="no-referrer"
               className="w-10 h-10 rounded-full object-cover border border-white/20"
             />
             <div>
               <p className="font-bold text-white text-sm">{session.studentName}</p>
-              <p className="text-slate-400 font-mono text-[11px]">{session.studentId}</p>
-              <p className="text-slate-400 text-[10px] truncate max-w-[170px]">{session.studentEmail}</p>
+              <p className="text-slate-400 font-mono text-[11px] tabular-nums">
+                Roll No. {session.rollNumber || session.studentId}
+              </p>
+              <p className="text-slate-400 text-[10px] truncate max-w-[170px]">
+                {session.studentEmail}
+              </p>
             </div>
           </div>
 
           <div className="space-y-1">
             <span className="text-slate-400 text-[11px] block">Test Administration:</span>
             <p className="font-semibold text-slate-200">{exam.category || 'Computer Science'}</p>
-            <p className="text-slate-400 font-mono text-[10px]">
-              {new Date(session.startedAt).toLocaleDateString()} · Completed {session.submittedAt ? new Date(session.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live'}
+            <p className="text-slate-400 font-mono text-[10px] tabular-nums">
+              {new Date(session.startedAt).toLocaleDateString()} · Completed{' '}
+              {session.submittedAt
+                ? new Date(session.submittedAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : 'Live'}
             </p>
           </div>
 
           <div className="space-y-1 md:text-right">
-            <span className="text-slate-400 text-[11px] block">Verification Certificate ID:</span>
+            <span className="text-slate-400 text-[11px] block">Session Reference ID:</span>
             <button
               onClick={handleCopyHash}
               className="font-mono text-cyan-400 font-bold text-[11px] flex items-center md:justify-end gap-1 hover:text-cyan-300 transition-colors"
-              title="Click to copy certificate verification hash"
+              title="Click to copy reference ID"
             >
               <Hash className="w-3 h-3" />
               <span>{certificateHash}</span>
             </button>
             <span className="text-[10px] text-slate-400 block font-mono">
-              {copiedNotice ? '✓ Copied to clipboard' : 'Cryptographically verified on-device'}
+              {copiedNotice ? '✓ Copied to clipboard' : 'Deterministic Option-ID Graded'}
             </span>
           </div>
         </div>
 
         {/* 3. Primary Score Tiers & Percentile Ranking Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Letter Grade & Score */}
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10 relative overflow-hidden">
             <span className="text-xs text-slate-400">Academic Grade</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className={`text-4xl font-extrabold ${isPassed ? 'text-emerald-400' : 'text-rose-400'}`}>
+              <span
+                className={`text-4xl font-extrabold ${
+                  isPassed ? 'text-emerald-400' : 'text-rose-400'
+                }`}
+              >
                 {letterGrade}
               </span>
               <span className="text-sm font-mono text-slate-300 tabular-nums">
                 ({scorePercent}%)
               </span>
             </div>
-            <span className="text-[11px] text-slate-400 mt-1 block">
-              {earnedPoints} / {totalPoints} Points Earned
+            <span className="text-[11px] text-slate-400 mt-1 block tabular-nums">
+              {finalEarnedScore} / {finalTotalScore} Points Earned
             </span>
           </div>
 
-          {/* Percentile Ranking */}
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
             <span className="text-xs text-slate-400 flex items-center justify-between">
               <span>Cohort Percentile</span>
@@ -465,12 +522,11 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
               </span>
               <span className="text-xs text-cyan-300 font-bold uppercase">th</span>
             </div>
-            <span className="text-[11px] text-slate-400 mt-1 block">
-              Top {100 - percentileRanking}% of class examinees
+            <span className="text-[11px] text-slate-400 mt-1 block tabular-nums">
+              Top {100 - percentileRanking}% of cohort
             </span>
           </div>
 
-          {/* Integrity Index */}
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
             <span className="text-xs text-slate-400 flex items-center justify-between">
               <span>Integrity Index</span>
@@ -485,12 +541,13 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
                 {session.integrityScore}%
               </span>
             </div>
-            <span className="text-[11px] text-slate-400 mt-1 block font-mono">
-              {session.violationCount === 0 ? 'Zero Breaches' : `${session.violationCount} Infractions Logged`}
+            <span className="text-[11px] text-slate-400 mt-1 block font-mono tabular-nums">
+              {session.violationCount === 0
+                ? 'Zero Flags'
+                : `${session.violationCount} Flags Logged`}
             </span>
           </div>
 
-          {/* Passing Status */}
           <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
             <span className="text-xs text-slate-400">Passing Verdict</span>
             <div className="flex items-center gap-2 mt-2">
@@ -506,7 +563,7 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
                 </>
               )}
             </div>
-            <span className="text-[11px] text-slate-400 mt-1 block font-mono">
+            <span className="text-[11px] text-slate-400 mt-1 block font-mono tabular-nums">
               Passing Mark: {exam.passingMarks}/{exam.totalMarks} pts
             </span>
           </div>
@@ -514,10 +571,9 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
 
         {/* 4. Topic Mastery Radar Chart & Subject Competencies */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center pt-2">
-          {/* Radar Canvas */}
           <div className="p-4 rounded-3xl bg-black/40 border border-white/10 flex flex-col justify-between">
             <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-2">
-              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-cyan-400" />
                 Topic Mastery Radar
               </span>
@@ -528,12 +584,9 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
             </div>
           </div>
 
-          {/* Module-by-Module Progress Bars */}
           <div className="space-y-3 p-4 rounded-3xl bg-white/5 border border-white/10">
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
-                Module Competency Breakdown
-              </span>
+              <span className="text-xs font-bold text-white">Module Competency Breakdown</span>
               <span className="text-xs text-slate-400 font-mono">Accuracy (%)</span>
             </div>
 
@@ -572,17 +625,21 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-cyan-400" />
-              Itemized Question-Level Accuracy & Explanations
+              Itemized Question-Level Accuracy & Canonical Option Verification
             </h3>
-            <span className="text-xs text-slate-400 font-mono">
+            <span className="text-xs text-slate-400 font-mono tabular-nums">
               {correctCount} of {totalQuestions} Correct
             </span>
           </div>
 
           <div className="space-y-2">
             {exam.questions.map((q, idx) => {
-              const selectedOpt = session.answers?.[q.id];
-              const isCorrect = selectedOpt === q.correctAnswer;
+              const evalResult = evaluateQuestionSelection(
+                q,
+                session.answers,
+                session.canonicalAnswers
+              );
+              const isCorrect = evalResult.isCorrect;
               const isExpanded = expandedQuestionId === q.id;
 
               return (
@@ -600,7 +657,7 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
+                        className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs tabular-nums ${
                           isCorrect
                             ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                             : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
@@ -615,7 +672,7 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
 
                     <div className="flex items-center gap-3 shrink-0">
                       <span
-                        className={`text-[11px] font-mono font-bold ${
+                        className={`text-[11px] font-mono font-bold tabular-nums ${
                           isCorrect ? 'text-emerald-400' : 'text-rose-400'
                         }`}
                       >
@@ -629,7 +686,6 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
                     </div>
                   </div>
 
-                  {/* Expanded pedagogical breakdown */}
                   {isExpanded && (
                     <div className="px-4 pb-4 pt-1 space-y-3 border-t border-white/5 text-xs text-slate-300">
                       <p className="font-medium text-white">{q.question}</p>
@@ -648,21 +704,27 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
                               : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
                           }`}
                         >
-                          <span className="text-[10px] uppercase font-bold block opacity-75">Your Choice:</span>
+                          <span className="text-[10px] uppercase font-bold block opacity-75">
+                            Candidate Selected Option:
+                          </span>
                           <span className="font-semibold">
-                            {selectedOpt !== undefined ? q.options[selectedOpt] : 'Skipped / Unanswered'}
+                            {evalResult.selectedOptionText || 'Skipped / Unanswered'}
                           </span>
                         </div>
 
                         <div className="p-2.5 rounded-xl border bg-emerald-500/10 border-emerald-500/30 text-emerald-300">
-                          <span className="text-[10px] uppercase font-bold block opacity-75">Correct Answer:</span>
-                          <span className="font-semibold">{q.options[q.correctAnswer]}</span>
+                          <span className="text-[10px] uppercase font-bold block opacity-75">
+                            Canonical Correct Answer:
+                          </span>
+                          <span className="font-semibold">{evalResult.correctOptionText}</span>
                         </div>
                       </div>
 
                       {q.explanation && (
                         <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] leading-relaxed">
-                          <span className="font-bold text-slate-200 block mb-0.5">Pedagogical Explanation:</span>
+                          <span className="font-bold text-slate-200 block mb-0.5">
+                            Pedagogical Explanation:
+                          </span>
                           <span className="text-slate-300">{q.explanation}</span>
                         </div>
                       )}
@@ -674,21 +736,23 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({
           </div>
         </div>
 
-        {/* 6. On-Device Proctoring Certification Seal */}
+        {/* 6. Monitoring Disclosure Footer */}
         <div className="p-4 rounded-2xl bg-cyan-950/20 border border-cyan-500/30 flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-2.5">
             <Cpu className="w-5 h-5 text-cyan-400 shrink-0" />
             <div>
-              <p className="font-bold text-white">On-Device Machine Learning Proctoring Authenticated</p>
+              <p className="font-bold text-white">
+                Canonical Grading & Human-Reviewed Monitoring Summary
+              </p>
               <p className="text-[11px] text-slate-300">
-                Liveness verification, screen-replay moiré test, and object tracking verified via TensorFlow.js WebGL.
+                Option selections were mapped via canonical option identifiers. Monitoring indicators are recorded for supervisor review.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-mono text-[11px] border border-emerald-500/30">
-              Integrity Verified: {session.integrityScore}%
+            <span className="text-emerald-300 font-mono text-[11px] tabular-nums">
+              Integrity Index: {session.integrityScore}%
             </span>
           </div>
         </div>

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   ShieldAlert,
   Clock,
-  CheckCircle,
   AlertTriangle,
   Flag,
   ArrowLeft,
@@ -11,22 +10,23 @@ import {
   Volume2,
   Eye,
   Camera,
-  XCircle,
-  Sparkles,
   FileCheck,
   Shuffle,
   Cpu,
+  EyeOff,
 } from 'lucide-react';
-import { Exam, StudentSession, ViolationRecord, BoundingBox, GlassTheme } from '../types';
+import { Exam, StudentSession, ViolationRecord, BoundingBox, GlassTheme, SignalSource } from '../types';
 import { LocalNeuralDetector } from '../utils/localNeuralDetector';
 import { GLASS_THEMES } from '../utils/theme';
 import { StudentReportCard } from './StudentReportCard';
+import { mapDisplayedAnswersToCanonical } from '../utils/shuffle';
 
 interface ExamRoomProps {
   exam: Exam;
   session: StudentSession;
   onExitExam: () => void;
   onViolationOccurred?: (v: ViolationRecord) => void;
+  onSessionSubmitted?: (s: StudentSession) => void;
   currentTheme: GlassTheme;
 }
 
@@ -35,6 +35,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
   session: initialSession,
   onExitExam,
   onViolationOccurred,
+  onSessionSubmitted,
   currentTheme,
 }) => {
   const [session, setSession] = useState<StudentSession>(initialSession);
@@ -46,8 +47,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   const theme = GLASS_THEMES[currentTheme];
+  const isNonCameraMode = session.accommodationMode === 'NON_CAMERA_ACCESSIBLE';
 
-  // Local Neural Detector state (TensorFlow.js + Canvas Vision)
+  // Local Neural Detector state (TensorFlow.js + Canvas Heuristics)
   const videoRef = useRef<HTMLVideoElement>(null);
   const [detector] = useState(() => new LocalNeuralDetector());
   const [livenessScore, setLivenessScore] = useState(96);
@@ -65,6 +67,8 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
   const lastViolationTime = useRef(0);
 
   useEffect(() => {
+    if (isNonCameraMode) return;
+
     let stream: MediaStream | null = null;
     navigator.mediaDevices
       .getUserMedia({
@@ -86,7 +90,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
       detector.stop();
       if (stream) stream.getTracks().forEach((t) => t.stop());
     };
-  }, []);
+  }, [isNonCameraMode]);
 
   // Timer countdown
   useEffect(() => {
@@ -104,7 +108,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
     return () => clearInterval(interval);
   }, [isSubmitted, timeRemaining]);
 
-  // Tab Switch & Visibility Change Detection (Local Browser Enforcement)
+  // Tab Switch & Visibility Change Detection (Browser Event Signal)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && !isSubmitted) {
@@ -112,8 +116,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
           'TAB_SWITCH_ATTACK',
           'WARNING',
           1.0,
+          'BROWSER_VISIBILITY_EVENT',
           'Candidate switched away from exam tab or minimized window.',
-          'Operating System window blur and document visibilityState changed to hidden.'
+          'Page Visibility API reported document.hidden state.'
         );
       }
     };
@@ -124,8 +129,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
           'TAB_SWITCH_ATTACK',
           'WARNING',
           0.95,
+          'BROWSER_VISIBILITY_EVENT',
           'Browser window focus lost.',
-          'Window blur event recorded. Focus deviated outside proctored exam hall.'
+          'Window blur event recorded; queued for proctor review.'
         );
       }
     };
@@ -139,9 +145,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
     };
   }, [isSubmitted]);
 
-  // Real-time Local ML Proctoring Loop (TensorFlow.js COCO-SSD + Computer Vision)
+  // Real-time Local ML & Heuristic Monitoring Loop (Skipped in Non-Camera Accessible Mode)
   useEffect(() => {
-    if (isSubmitted || !videoRef.current) return;
+    if (isSubmitted || isNonCameraMode || !videoRef.current) return;
 
     let isProcessing = false;
     const interval = setInterval(async () => {
@@ -157,7 +163,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
         const boxes: BoundingBox[] = [];
         if (metrics.faceBoundingBox) {
           boxes.push({
-            label: metrics.isLive ? 'Abhijeet (Live · Local ML)' : 'Spoof Suspected',
+            label: metrics.isLive ? `${session.studentName} (Face Box)` : 'Heuristic Flag',
             x: metrics.faceBoundingBox.x,
             y: metrics.faceBoundingBox.y,
             width: metrics.faceBoundingBox.width,
@@ -166,7 +172,6 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
           });
         }
 
-        // Overlay TensorFlow.js detected objects (cell phones, laptops, books)
         metrics.devicesDetected.forEach((d) => {
           boxes.push(d.box);
         });
@@ -185,8 +190,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
               'MOBILE_PHONE_DETECTED',
               'CRITICAL',
               0.94,
-              'Mobile phone detected by local TensorFlow.js neural network.',
-              'COCO-SSD MobileNet inference triggered cell phone class in lower frame.',
+              'TFJS_OBJECT_DETECTOR',
+              'Mobile phone object class detected by TensorFlow.js COCO-SSD.',
+              'COCO-SSD MobileNet v2 inference reported cell phone bounding box.',
               boxes
             );
           }
@@ -204,8 +210,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
               'MULTIPLE_FACES_DETECTED',
               'CRITICAL',
               0.93,
-              `Multiple individuals (${metrics.faceCount} persons) detected in webcam feed.`,
-              'TensorFlow.js COCO-SSD identified multiple simultaneous person bounding boxes.',
+              'TFJS_OBJECT_DETECTOR',
+              `Multiple person bounding boxes (${metrics.faceCount}) detected in frame.`,
+              'TensorFlow.js COCO-SSD reported multiple person instances.',
               boxes
             );
           }
@@ -213,7 +220,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
           multiPersonCounter.current = Math.max(0, multiPersonCounter.current - 1);
         }
 
-        // 3. Candidate Absence Check
+        // 3. Candidate Absence Heuristic Check
         if (!metrics.faceDetected) {
           absenceCounter.current++;
           if (absenceCounter.current >= 4) {
@@ -223,16 +230,21 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
               'FACE_NOT_FOUND',
               'WARNING',
               0.88,
-              'Candidate face missing from frame.',
-              'Candidate absence detected for > 4.5 seconds.'
+              'PIXEL_AUDIO_HEURISTIC',
+              'No face bounding box detected in frame.',
+              'Absence indicator triggered for > 4.5 seconds; logged for human review.'
             );
           }
         } else {
           absenceCounter.current = 0;
         }
 
-        // 4. Gaze Deviation Check
-        if (metrics.gazeDirection === 'LEFT' || metrics.gazeDirection === 'RIGHT' || metrics.gazeDirection === 'DOWN') {
+        // 4. Gaze Position Heuristic Check
+        if (
+          metrics.gazeDirection === 'LEFT' ||
+          metrics.gazeDirection === 'RIGHT' ||
+          metrics.gazeDirection === 'DOWN'
+        ) {
           gazeAwayCounter.current++;
           if (gazeAwayCounter.current >= 5) {
             gazeAwayCounter.current = 0;
@@ -241,23 +253,25 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
               'SUSPICIOUS_GAZE_DEVIATION',
               'WARNING',
               0.85,
-              `Gaze deviation detected (${metrics.gazeDirection}). Candidate looking away from screen.`,
-              'Iris centroid & head yaw offset exceeded threshold.'
+              'PIXEL_AUDIO_HEURISTIC',
+              `Position heuristic offset (${metrics.gazeDirection}).`,
+              'Bounding-box centroid offset exceeded threshold; logged for human review.'
             );
           }
         } else {
           gazeAwayCounter.current = Math.max(0, gazeAwayCounter.current - 1);
         }
 
-        // 5. Local Computer Vision Spoof Check (2D Frequency Moiré & Optical Flow)
+        // 5. Pixel Frame-Difference & Contrast Heuristics
         if (metrics.staticPhotoScore > 75) {
           lastViolationTime.current = now;
           logViolation(
             'SPOOF_PHOTO_ATTACK',
             'CRITICAL',
             0.91,
-            'Printed photograph presentation attack detected.',
-            'Local optical flow calculated 0% micro-motion variance and rigid planar movement.'
+            'PIXEL_AUDIO_HEURISTIC',
+            'Static frame-difference heuristic threshold exceeded.',
+            'Low frame-to-frame pixel variance indicator; requires human proctor verification.'
           );
         } else if (metrics.screenSpoofScore > 80) {
           lastViolationTime.current = now;
@@ -265,8 +279,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
             'SCREEN_REPLAY_ATTACK',
             'CRITICAL',
             0.89,
-            'Digital screen replay presentation attack detected.',
-            '2D Laplacian frequency variance identified discrete display pixel subgrid artifacts.'
+            'PIXEL_AUDIO_HEURISTIC',
+            'Local contrast heuristic threshold exceeded.',
+            'High-frequency local contrast indicator; requires human proctor verification.'
           );
         }
       } catch (err) {
@@ -277,22 +292,23 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
     }, 700);
 
     return () => clearInterval(interval);
-  }, [isSubmitted]);
+  }, [isSubmitted, isNonCameraMode]);
 
   const logViolation = async (
     type: ViolationRecord['violationType'],
     severity: ViolationRecord['severity'],
     confidence: number,
+    signalSource: SignalSource,
     details: string,
     forensic: string,
     boxes?: BoundingBox[]
   ) => {
     let snapshot = '';
-    if (videoRef.current) {
+    if (!isNonCameraMode && videoRef.current) {
       snapshot = detector.captureSnapshot(videoRef.current);
     }
 
-    setLastWarningMsg(`⚠️ ${type.replace(/_/g, ' ')}: ${details}`);
+    setLastWarningMsg(`Indicator Logged (${signalSource}): ${details}`);
     setTimeout(() => setLastWarningMsg(null), 5000);
 
     try {
@@ -302,24 +318,22 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
         body: JSON.stringify({
           sessionId: session.sessionId,
           studentId: session.studentId,
-          studentName: session.studentName || 'Abhijeet',
+          studentName: session.studentName || 'Abhijeet Singh',
           examId: exam.id,
           violationType: type,
           severity,
           confidence,
+          signalSource,
           snapshotUrl: snapshot,
           boundingBoxes: boxes || hudBoundingBoxes,
           details,
-          aiForensicAnalysis: `[Local ML Verified] ${forensic}`,
+          aiForensicAnalysis: `[Signal: ${signalSource}] ${forensic}`,
         }),
       });
       const data = await res.json();
       if (data.success && data.violation) {
         if (data.session) {
           setSession(data.session);
-          if (data.session.violationCount >= exam.maxViolationsAllowed) {
-            handleSubmitExam();
-          }
         }
         if (onViolationOccurred) {
           onViolationOccurred(data.violation);
@@ -332,6 +346,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
 
   const handleSubmitExam = async () => {
     setShowSubmitModal(false);
+    // Translate displayed answers into canonical unshuffled option indices (P0 Correctness Fix)
+    const { canonicalAnswers, presentedOptionOrder } = mapDisplayedAnswersToCanonical(exam, answers);
+
     try {
       const res = await fetch('/api/sessions/submit', {
         method: 'POST',
@@ -339,11 +356,48 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
         body: JSON.stringify({
           sessionId: session.sessionId,
           answers,
+          canonicalAnswers,
+          presentedOptionOrder,
         }),
       });
       const data = await res.json();
       if (data.success && data.session) {
-        setSession(data.session);
+        const updatedSession: StudentSession = {
+          ...data.session,
+          answers,
+          canonicalAnswers,
+          presentedOptionOrder,
+        };
+        setSession(updatedSession);
+        if (onSessionSubmitted) {
+          onSessionSubmitted(updatedSession);
+        }
+      } else {
+        // Compute local canonical fallback if offline
+        let totalScore = 0;
+        let earnedScore = 0;
+        exam.questions.forEach((q) => {
+          totalScore += q.points;
+          const canonCorrect =
+            typeof q.canonicalCorrectAnswer === 'number' ? q.canonicalCorrectAnswer : q.correctAnswer;
+          if (canonicalAnswers[q.id] === canonCorrect) {
+            earnedScore += q.points;
+          }
+        });
+        const localCompleted: StudentSession = {
+          ...session,
+          submittedAt: new Date().toISOString(),
+          status: 'SUBMITTED',
+          answers,
+          canonicalAnswers,
+          presentedOptionOrder,
+          score: earnedScore,
+          totalScore,
+        };
+        setSession(localCompleted);
+        if (onSessionSubmitted) {
+          onSessionSubmitted(localCompleted);
+        }
       }
     } catch (e) {
       console.warn('Submit exam error:', e);
@@ -351,14 +405,15 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
     setIsSubmitted(true);
   };
 
-  // On-device local neural scan trigger (0ms latency, zero cloud dependency)
   const handlePerformLocalNeuralScan = async () => {
-    if (!videoRef.current || isLocalScanning) return;
+    if (!videoRef.current || isLocalScanning || isNonCameraMode) return;
     setIsLocalScanning(true);
     try {
       const m = await detector.processFrameAsync(videoRef.current);
       setLastWarningMsg(
-        `Local ML Audit: ${m.isLive ? 'Verified Live Candidate' : 'Spoof Warning'} (${m.livenessScore}% Score · TensorFlow.js WebGL)`
+        `Frame Indicator Check: ${
+          m.faceDetected ? 'Face Box Detected' : 'No Face Box'
+        } (${m.livenessScore}% heuristic score · COCO-SSD)`
       );
       setTimeout(() => setLastWarningMsg(null), 4000);
     } catch (e) {
@@ -395,19 +450,21 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
     <div className="max-w-7xl mx-auto px-4 py-4 space-y-4 font-['Plus_Jakarta_Sans',sans-serif]">
       {/* Warning Toast */}
       {lastWarningMsg && (
-        <div className="p-3 bg-rose-600/90 text-white rounded-2xl shadow-2xl flex items-center justify-between border border-rose-400 animate-pulse">
+        <div className="p-3 bg-amber-600/90 text-white rounded-2xl shadow-2xl flex items-center justify-between border border-amber-400">
           <div className="flex items-center gap-2 text-xs font-semibold">
             <ShieldAlert className="w-5 h-5 text-white" />
             <span>{lastWarningMsg}</span>
           </div>
           <span className="text-[10px] bg-black/40 px-2 py-0.5 rounded font-mono">
-            Local Neural Audit
+            Queued for Proctor Review
           </span>
         </div>
       )}
 
       {/* Header Bar */}
-      <div className={`rounded-2xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl`}>
+      <div
+        className={`rounded-2xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl`}
+      >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white font-bold text-xs">
             {exam.code}
@@ -416,13 +473,14 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-bold text-white">{exam.title}</h1>
               {exam.securitySettings?.randomizeQuestionsAndOptions && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono flex items-center gap-1">
-                  <Shuffle className="w-3 h-3" /> Shuffled
+                <span className="text-[11px] text-cyan-400 font-mono flex items-center gap-1">
+                  · <Shuffle className="w-3 h-3" /> Canonical Option Mapping
                 </span>
               )}
             </div>
             <p className="text-[11px] text-slate-400">
-              Candidate: <span className="text-slate-200 font-medium">{session.studentName}</span> ({session.studentId})
+              Candidate: <span className="text-slate-200 font-medium">{session.studentName}</span> · Roll No.{' '}
+              <span className="font-mono tabular-nums">{session.rollNumber || session.studentId}</span>
             </p>
           </div>
         </div>
@@ -430,16 +488,22 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-white/10 text-xs">
             <AlertTriangle
-              className={`w-3.5 h-3.5 ${session.violationCount > 0 ? 'text-rose-400' : 'text-slate-400'}`}
+              className={`w-3.5 h-3.5 ${
+                session.violationCount > 0 ? 'text-amber-400' : 'text-slate-400'
+              }`}
             />
-            <span className="text-slate-400 text-[11px]">Warnings:</span>
-            <span className={`font-mono font-bold text-xs ${session.violationCount > 0 ? 'text-rose-400' : 'text-white'}`}>
+            <span className="text-slate-400 text-[11px]">Flags for Review:</span>
+            <span
+              className={`font-mono font-bold text-xs tabular-nums ${
+                session.violationCount > 0 ? 'text-amber-400' : 'text-white'
+              }`}
+            >
               {session.violationCount} / {exam.maxViolationsAllowed}
             </span>
           </div>
 
           <div
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border font-mono font-bold text-xs ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border font-mono font-bold text-xs tabular-nums ${
               timeRemaining < 300
                 ? 'bg-rose-500/20 text-rose-400 border-rose-500/30 animate-pulse'
                 : 'bg-black/40 border-white/10 text-emerald-400'
@@ -463,13 +527,17 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left 2 Cols: Question Paper */}
         <div className="lg:col-span-2 space-y-4">
-          <div className={`rounded-3xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-6 shadow-xl space-y-5`}>
+          <div
+            className={`rounded-3xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-6 shadow-xl space-y-5`}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold font-mono">
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold font-mono tabular-nums">
                   Question {currentQuestionIndex + 1} of {exam.questions.length}
                 </span>
-                <span className="text-xs text-slate-400 font-mono">({currentQ?.points ?? 10} Points)</span>
+                <span className="text-xs text-slate-400 font-mono tabular-nums">
+                  · {currentQ?.points ?? 10} Points · ID: {currentQ?.id}
+                </span>
               </div>
 
               {currentQ && (
@@ -487,7 +555,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
                   }`}
                 >
                   <Flag className="w-3.5 h-3.5" />
-                  <span>{flaggedQuestions[currentQ.id] ? 'Flagged for Review' : 'Mark for Review'}</span>
+                  <span>
+                    {flaggedQuestions[currentQ.id] ? 'Flagged for Review' : 'Mark for Review'}
+                  </span>
                 </button>
               )}
             </div>
@@ -505,6 +575,9 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
             <div className="space-y-3 pt-2">
               {currentQ?.options.map((opt, idx) => {
                 const isSelected = answers[currentQ.id] === idx;
+                const canonicalIdx = currentQ.optionIndexMap
+                  ? currentQ.optionIndexMap[idx]
+                  : idx;
                 return (
                   <button
                     key={idx}
@@ -514,22 +587,27 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
                         [currentQ.id]: idx,
                       }))
                     }
-                    className={`w-full text-left p-4 rounded-2xl border text-sm font-medium transition-all flex items-start gap-3 ${
+                    className={`w-full text-left p-4 rounded-2xl border text-sm font-medium transition-all flex items-start justify-between gap-3 ${
                       isSelected
                         ? 'bg-emerald-500/15 border-emerald-500/60 text-white shadow-md'
                         : 'bg-black/20 border-white/5 text-slate-300 hover:bg-white/5 hover:border-white/15'
                     }`}
                   >
-                    <div
-                      className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
-                        isSelected
-                          ? 'border-emerald-400 bg-emerald-500 text-slate-950 font-extrabold'
-                          : 'border-white/20 text-slate-400'
-                      }`}
-                    >
-                      {String.fromCharCode(65 + idx)}
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
+                          isSelected
+                            ? 'border-emerald-400 bg-emerald-500 text-slate-950 font-extrabold'
+                            : 'border-white/20 text-slate-400'
+                        }`}
+                      >
+                        {String.fromCharCode(65 + idx)}
+                      </div>
+                      <span className="leading-snug">{opt}</span>
                     </div>
-                    <span className="leading-snug">{opt}</span>
+                    <span className="text-[10px] font-mono text-slate-500 shrink-0 mt-1">
+                      opt-{canonicalIdx + 1}
+                    </span>
                   </button>
                 );
               })}
@@ -544,7 +622,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
                 <ArrowLeft className="w-3.5 h-3.5" /> Previous
               </button>
 
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-slate-400 tabular-nums">
                 Answered <span className="text-emerald-400 font-bold">{answeredCount}</span> of{' '}
                 {exam.questions.length}
               </div>
@@ -561,10 +639,10 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
             </div>
           </div>
 
-          <div className={`rounded-2xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-4 shadow-lg`}>
-            <h3 className="text-xs font-bold text-slate-300 mb-3 uppercase tracking-wider">
-              Question Navigator
-            </h3>
+          <div
+            className={`rounded-2xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-4 shadow-lg`}
+          >
+            <h3 className="text-xs font-bold text-slate-300 mb-3">Question Navigator</h3>
             <div className="flex flex-wrap gap-2">
               {exam.questions.map((q, idx) => {
                 const isCurrent = idx === currentQuestionIndex;
@@ -575,7 +653,7 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
                   <button
                     key={q.id}
                     onClick={() => setCurrentQuestionIndex(idx)}
-                    className={`w-9 h-9 rounded-xl text-xs font-bold font-mono transition-all relative flex items-center justify-center ${
+                    className={`w-9 h-9 rounded-xl text-xs font-bold font-mono tabular-nums transition-all relative flex items-center justify-center ${
                       isCurrent
                         ? 'ring-2 ring-emerald-400 bg-emerald-500 text-slate-950 font-extrabold shadow-md'
                         : isAnswered
@@ -594,118 +672,145 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
           </div>
         </div>
 
-        {/* Right Col: Local Neural Proctor HUD */}
+        {/* Right Col: Monitoring Indicators Panel */}
         <div className="space-y-4">
-          <div className={`rounded-3xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-4 shadow-xl space-y-4`}>
+          <div
+            className={`rounded-3xl border ${theme.border} ${theme.cardBg} ${theme.glow} p-4 shadow-xl space-y-4`}
+          >
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-xs font-bold text-white">
-                <Camera className="w-4 h-4 text-emerald-400" />
-                Local Neural HUD
+                {isNonCameraMode ? (
+                  <EyeOff className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Camera className="w-4 h-4 text-emerald-400" />
+                )}
+                {isNonCameraMode ? 'Accessible Session Monitor' : 'Browser Monitoring HUD'}
               </span>
-              <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                {tfModelReady ? 'TF.js WebGL Active' : 'Loading Local ML...'}
+              <span className="text-[10px] font-mono text-emerald-400">
+                {isNonCameraMode
+                  ? 'Non-Camera Accommodation'
+                  : tfModelReady
+                  ? 'COCO-SSD Ready'
+                  : 'Heuristic Mode'}
               </span>
             </div>
 
-            {/* Video Viewport with Bounding Box Overlay */}
-            <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[4/3] border border-white/15 shadow-inner">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover transform -scale-x-100"
-              />
-
-              {hudBoundingBoxes.map((box, i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: 'absolute',
-                    left: `${(box.x / 320) * 100}%`,
-                    top: `${(box.y / 240) * 100}%`,
-                    width: `${(box.width / 320) * 100}%`,
-                    height: `${(box.height / 240) * 100}%`,
-                    borderColor: box.color || '#10b981',
-                    borderWidth: '2px',
-                    borderStyle: 'solid',
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <span
-                    style={{ backgroundColor: box.color || '#10b981' }}
-                    className="text-[9px] font-bold text-slate-950 px-1 py-0.2 rounded-sm absolute -top-4 left-0 uppercase font-mono"
-                  >
-                    {box.label}
-                  </span>
-                </div>
-              ))}
-
-              <div className="absolute bottom-2 left-2 right-2 bg-black/80 backdrop-blur-md p-2 rounded-xl border border-white/10 flex items-center justify-between text-[11px] font-mono">
-                <span className="text-emerald-400 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                  Liveness: {livenessScore}%
-                </span>
-                <span className="text-slate-300">Gaze: {gazeStatus}</span>
+            {isNonCameraMode ? (
+              <div className="rounded-2xl bg-slate-950/90 aspect-[4/3] border border-amber-500/30 p-5 flex flex-col items-center justify-center text-center space-y-2">
+                <EyeOff className="w-8 h-8 text-amber-400" />
+                <p className="text-xs font-bold text-white">
+                  Non-Camera Accessibility Accommodation
+                </p>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Camera and audio sensors are disabled per candidate accommodation. Only exam timer and tab visibility events are active.
+                </p>
               </div>
-            </div>
+            ) : (
+              <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-[4/3] border border-white/15 shadow-inner">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover transform -scale-x-100"
+                />
 
-            {/* Local ML Sensor Telemetry */}
+                {hudBoundingBoxes.map((box, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      position: 'absolute',
+                      left: `${(box.x / 320) * 100}%`,
+                      top: `${(box.y / 240) * 100}%`,
+                      width: `${(box.width / 320) * 100}%`,
+                      height: `${(box.height / 240) * 100}%`,
+                      borderColor: box.color || '#10b981',
+                      borderWidth: '2px',
+                      borderStyle: 'solid',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <span
+                      style={{ backgroundColor: box.color || '#10b981' }}
+                      className="text-[9px] font-bold text-slate-950 px-1 py-0.2 rounded-sm absolute -top-4 left-0 uppercase font-mono"
+                    >
+                      {box.label}
+                    </span>
+                  </div>
+                ))}
+
+                <div className="absolute bottom-2 left-2 right-2 bg-black/80 backdrop-blur-md p-2 rounded-xl border border-white/10 flex items-center justify-between text-[11px] font-mono tabular-nums">
+                  <span className="text-emerald-400">Heuristic Score: {livenessScore}%</span>
+                  <span className="text-slate-300">Box Pos: {gazeStatus}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Signal Provenance Indicators */}
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10">
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-                  Local ML Engine
+                  Object Detector
                 </span>
                 <span className="font-mono text-cyan-400 font-semibold text-[11px]">
-                  COCO-SSD MobileNet
+                  {isNonCameraMode ? 'Bypassed' : 'TF.js COCO-SSD'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10">
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Eye className="w-3.5 h-3.5 text-cyan-400" />
-                  Gaze Deviation
+                  Position Heuristic
                 </span>
-                <span className={`font-mono font-semibold ${gazeStatus === 'CENTER' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {gazeStatus}
+                <span
+                  className={`font-mono font-semibold ${
+                    gazeStatus === 'CENTER' ? 'text-emerald-400' : 'text-amber-400'
+                  }`}
+                >
+                  {isNonCameraMode ? 'N/A' : gazeStatus}
                 </span>
               </div>
 
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10">
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Volume2 className="w-3.5 h-3.5 text-indigo-400" />
-                  Ambient Noise Meter
+                  Audio Level Heuristic
                 </span>
                 <div className="flex items-center gap-2">
                   <div className="w-16 h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
                     <div
-                      className={`h-full transition-all ${audioLevel > 50 ? 'bg-rose-500' : 'bg-emerald-400'}`}
-                      style={{ width: `${Math.min(100, audioLevel * 1.5)}%` }}
+                      className={`h-full transition-all ${
+                        audioLevel > 50 ? 'bg-rose-500' : 'bg-emerald-400'
+                      }`}
+                      style={{ width: `${isNonCameraMode ? 0 : Math.min(100, audioLevel * 1.5)}%` }}
                     ></div>
                   </div>
-                  <span className="font-mono text-slate-300 text-[10px]">{audioLevel} dB</span>
+                  <span className="font-mono text-slate-300 text-[10px] tabular-nums">
+                    {isNonCameraMode ? 'Muted' : `${audioLevel} lvl`}
+                  </span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10">
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Maximize2 className="w-3.5 h-3.5 text-emerald-400" />
-                  Window Lockdown
+                  Visibility Listener
                 </span>
-                <span className="font-mono text-emerald-400 font-semibold">ENFORCED</span>
+                <span className="font-mono text-emerald-400 font-semibold">ACTIVE</span>
               </div>
             </div>
 
-            <button
-              onClick={handlePerformLocalNeuralScan}
-              disabled={isLocalScanning}
-              className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all"
-            >
-              <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-              {isLocalScanning ? 'Running Local Neural Scan...' : 'Trigger Local Neural Scan'}
-            </button>
+            {!isNonCameraMode && (
+              <button
+                onClick={handlePerformLocalNeuralScan}
+                disabled={isLocalScanning}
+                className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all"
+              >
+                <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+                {isLocalScanning ? 'Evaluating Frame...' : 'Check Frame Indicators'}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -713,27 +818,31 @@ export const ExamRoom: React.FC<ExamRoomProps> = ({
       {/* Confirmation Modal */}
       {showSubmitModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className={`rounded-3xl border ${theme.border} ${theme.cardBg} ${theme.glow} max-w-md w-full p-6 shadow-2xl space-y-4`}>
+          <div
+            className={`rounded-3xl border ${theme.border} ${theme.cardBg} ${theme.glow} max-w-md w-full p-6 shadow-2xl space-y-4`}
+          >
             <h3 className="text-base font-bold text-white">Confirm Exam Submission?</h3>
             <p className="text-xs text-slate-300">
               Candidate <strong className="text-white">{session.studentName}</strong>, you have answered{' '}
               <strong className="text-emerald-400">{answeredCount}</strong> of{' '}
-              <strong>{exam.questions.length}</strong> questions.
+              <strong>{exam.questions.length}</strong> questions. Your shuffled option selections will be mapped back to canonical option IDs for deterministic grading.
               {answeredCount < exam.questions.length && (
                 <span className="text-amber-400 block mt-1 font-semibold">
-                  ⚠️ Note: {exam.questions.length - answeredCount} unanswered questions remain!
+                  Note: {exam.questions.length - answeredCount} unanswered questions remain.
                 </span>
               )}
             </p>
 
             <div className="p-3 bg-white/5 rounded-xl border border-white/10 text-xs text-slate-300 space-y-1">
               <p className="flex justify-between">
-                <span>Total Warnings Logged:</span>
-                <span className="font-bold text-white">{session.violationCount}</span>
+                <span>Incidents Queued for Review:</span>
+                <span className="font-bold text-white tabular-nums">{session.violationCount}</span>
               </p>
               <p className="flex justify-between">
                 <span>Current Integrity Index:</span>
-                <span className="font-bold text-emerald-400">{session.integrityScore}%</span>
+                <span className="font-bold text-emerald-400 tabular-nums">
+                  {session.integrityScore}%
+                </span>
               </p>
             </div>
 

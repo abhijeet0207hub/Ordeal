@@ -85,9 +85,23 @@ export const AntiSpoofingLab: React.FC<AntiSpoofingLabProps> = ({
         faceCount: m.faceCount,
         suggestedProctorAction: isLive ? 'ALLOW' : 'FLAG_VERIFY',
         forensicReasoning: isLive
-          ? 'On-device TensorFlow.js WebGL and 2D Laplacian frequency analysis verified natural 3D volumetric facial contours and spontaneous physiological micro-motion. Zero secondary displays or unauthorized objects detected.'
-          : 'Local anti-spoofing heuristic detected high frequency planar moiré artifacts and lack of ocular depth variation.',
+          ? 'On-device TensorFlow.js WebGL (COCO-SSD) and 2D Laplacian pixel/contrast heuristics verified local motion and absence of planar screen moiré artifacts.'
+          : 'Local anti-spoofing pixel/contrast heuristic detected high frequency planar moiré artifacts or lack of motion.',
+        serverEndpointStatus: null as any,
       };
+
+      try {
+        const srvRes = await fetch('/api/verify-anti-spoof', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientMetrics: m }),
+        });
+        const srvData = await srvRes.json();
+        result.serverEndpointStatus = srvData;
+      } catch (srvErr) {
+        console.warn('Server anti-spoof check error:', srvErr);
+      }
+
       setNeuralAuditResult(result);
     } catch (e) {
       console.warn('Lab audit error:', e);
@@ -104,11 +118,11 @@ export const AntiSpoofingLab: React.FC<AntiSpoofingLabProps> = ({
           <div className="flex items-center gap-2">
             <Cpu className="w-6 h-6 text-indigo-400" />
             <h1 className="text-2xl font-extrabold text-white tracking-tight">
-              Ordeal Anti-Spoofing AI Research Lab
+              Ordeal Anti-Spoofing & Signal Provenance Lab
             </h1>
           </div>
           <p className="text-xs text-slate-300 mt-1">
-            Real-time on-device TensorFlow.js WebGL neural detection, 2D Laplacian moiré filter, and optical flow kinematics.
+            Separates real-time TensorFlow.js COCO-SSD object detection, 2D Laplacian pixel heuristics, and server-side `/api/verify-anti-spoof` status.
           </p>
         </div>
 
@@ -118,7 +132,7 @@ export const AntiSpoofingLab: React.FC<AntiSpoofingLabProps> = ({
           className={`flex items-center gap-2 px-5 py-2.5 font-bold text-xs rounded-2xl shadow-lg transition-all disabled:opacity-50 ${theme.accentBtn}`}
         >
           <Sparkles className="w-4 h-4 text-cyan-300" />
-          <span>{isAuditing ? 'TensorFlow.js WebGL Auditing...' : 'Run Local Neural Forensic Audit'}</span>
+          <span>{isAuditing ? 'Auditing Local & Server Signals...' : 'Run Local + Server Forensic Audit'}</span>
         </button>
       </div>
 
@@ -320,11 +334,27 @@ export const AntiSpoofingLab: React.FC<AntiSpoofingLabProps> = ({
               </div>
 
               <div className="p-3.5 bg-black/40 rounded-2xl border border-white/10 text-xs">
-                <span className="text-slate-400 font-bold block mb-1">Reasoning:</span>
+                <span className="text-slate-400 font-bold block mb-1">Local Heuristic Reasoning:</span>
                 <p className="text-slate-200 leading-relaxed font-mono">
                   {neuralAuditResult.forensicReasoning}
                 </p>
               </div>
+
+              {neuralAuditResult.serverEndpointStatus && (
+                <div className="p-3.5 bg-amber-500/10 rounded-2xl border border-amber-500/30 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-amber-300 font-bold font-mono">
+                      Server Endpoint (/api/verify-anti-spoof) Response:
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold">
+                      {neuralAuditResult.serverEndpointStatus.verdict} (evaluatedByAi: {String(neuralAuditResult.serverEndpointStatus.evaluatedByAi)})
+                    </span>
+                  </div>
+                  <p className="text-slate-300 font-mono text-[11px] leading-relaxed">
+                    {neuralAuditResult.serverEndpointStatus.forensicReasoning}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

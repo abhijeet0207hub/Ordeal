@@ -11,6 +11,11 @@ export type ViolationType =
 
 export type ViolationSeverity = 'CRITICAL' | 'WARNING' | 'INFO';
 
+export type SignalSource =
+  | 'TFJS_OBJECT_DETECTOR'
+  | 'PIXEL_AUDIO_HEURISTIC'
+  | 'BROWSER_VISIBILITY_EVENT';
+
 export interface BoundingBox {
   label: string;
   x: number;
@@ -32,7 +37,9 @@ export interface ViolationRecord {
   violationType: ViolationType;
   severity: ViolationSeverity;
   confidence: number;
+  signalSource?: SignalSource;
   snapshotUrl: string;
+  snapshotDeletedAt?: string;
   boundingBoxes?: BoundingBox[];
   details: string;
   aiForensicAnalysis?: string;
@@ -48,6 +55,19 @@ export interface ExamQuestion {
   codeSnippet?: string;
   options: string[];
   correctAnswer: number;
+  /**
+   * Maps displayed option index (0..3) back to the canonical unshuffled option index (0..3).
+   * Ensures server grading and client report cards agree 100% under Fisher-Yates option shuffling.
+   */
+  optionIndexMap?: number[];
+  /**
+   * Preserves the canonical unshuffled options array for auditability.
+   */
+  canonicalOptions?: string[];
+  /**
+   * Preserves the canonical unshuffled correct answer index.
+   */
+  canonicalCorrectAnswer?: number;
   explanation: string;
   points: number;
 }
@@ -56,13 +76,17 @@ export type GlassTheme = 'alabaster' | 'obsidian' | 'smoky' | 'iridescent';
 
 export interface AuthUser {
   id: string;
+  uid?: string;
   name: string;
   email: string;
   role: 'candidate' | 'proctor';
   avatarUrl: string;
+  rollNumber?: string;
   studentId?: string;
   staffId?: string;
   department?: string;
+  authToken?: string;
+  authProvider?: 'firebase' | 'server';
 }
 
 export interface Exam {
@@ -86,9 +110,13 @@ export interface Exam {
   };
 }
 
+export type AccommodationMode = 'STANDARD_CAMERA' | 'NON_CAMERA_ACCESSIBLE';
+
 export interface StudentSession {
   sessionId: string;
+  uid?: string;
   studentId: string;
+  rollNumber?: string;
   studentName: string;
   studentEmail: string;
   studentAvatar: string;
@@ -98,7 +126,21 @@ export interface StudentSession {
   startedAt: string;
   submittedAt?: string;
   status: 'IN_PROGRESS' | 'SUBMITTED' | 'DISQUALIFIED' | 'FLAGGED';
+  /**
+   * Displayed option index selected by candidate (keyed by question.id)
+   */
   answers: Record<string, number>;
+  /**
+   * Canonical unshuffled option index selected by candidate (keyed by question.id).
+   * Used by server and report card so shuffled options never diverge at grading.
+   */
+  canonicalAnswers?: Record<string, number>;
+  /**
+   * Audit map recording how options were permuted for each question.
+   */
+  presentedOptionOrder?: Record<string, number[]>;
+  consentAcceptedAt?: string;
+  accommodationMode?: AccommodationMode;
   score?: number;
   totalScore?: number;
   integrityScore: number; // 0 to 100
@@ -135,4 +177,14 @@ export interface LivenessChallenge {
   instruction: string;
   timeLimitSec: number;
   iconName: string;
+}
+
+export interface VerificationTestResult {
+  id: string;
+  priority: 'P0' | 'P1' | 'P2';
+  category: string;
+  title: string;
+  passed: boolean;
+  details: string;
+  durationMs: number;
 }

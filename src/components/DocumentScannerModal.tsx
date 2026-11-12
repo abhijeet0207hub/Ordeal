@@ -22,6 +22,7 @@ interface DocumentScannerModalProps {
   onClose: () => void;
   onExamCreated: (exam: Exam) => void;
   currentTheme: GlassTheme;
+  authToken?: string;
 }
 
 export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
@@ -29,6 +30,7 @@ export const DocumentScannerModal: React.FC<DocumentScannerModalProps> = ({
   onClose,
   onExamCreated,
   currentTheme,
+  authToken,
 }) => {
   const [scanMode, setScanMode] = useState<'upload' | 'camera'>('upload');
   const [file, setFile] = useState<File | null>(null);
@@ -170,17 +172,29 @@ Explanation: Digital displays emit periodic pixel grid moiré frequencies that L
 
   const handleApproveAndAddExam = async () => {
     if (extractedExam) {
+      let canonicalExam = extractedExam;
       try {
-        // Save to server database so candidate portal can also see it
-        await fetch('/api/exams', {
+        // Save to server database and adopt the server-canonical IDs (Table 5.5 fix)
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'X-User-Role': 'proctor',
+        };
+        if (authToken) {
+          headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        const res = await fetch('/api/exams', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(extractedExam),
         });
+        const data = await res.json();
+        if (data.success && data.exam) {
+          canonicalExam = data.exam;
+        }
       } catch (err) {
         console.warn('Sync exam error:', err);
       }
-      onExamCreated(extractedExam);
+      onExamCreated(canonicalExam);
       onClose();
     }
   };

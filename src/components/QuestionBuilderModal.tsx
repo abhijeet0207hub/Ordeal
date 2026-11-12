@@ -21,6 +21,7 @@ interface QuestionBuilderModalProps {
   exams: Exam[];
   onQuestionAdded: (examId: string, q: ExamQuestion) => void;
   currentTheme: GlassTheme;
+  authToken?: string;
 }
 
 export const QuestionBuilderModal: React.FC<QuestionBuilderModalProps> = ({
@@ -29,6 +30,7 @@ export const QuestionBuilderModal: React.FC<QuestionBuilderModalProps> = ({
   exams,
   onQuestionAdded,
   currentTheme,
+  authToken,
 }) => {
   const [selectedExamId, setSelectedExamId] = useState(exams[0]?.id || 'exam-cs-401');
   const [questionText, setQuestionText] = useState('');
@@ -110,17 +112,29 @@ export const QuestionBuilderModal: React.FC<QuestionBuilderModalProps> = ({
       points,
     };
 
+    let canonicalQuestion = newQuestion;
     try {
-      await fetch(`/api/exams/${selectedExamId}/questions`, {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-User-Role': 'proctor',
+      };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      const res = await fetch(`/api/exams/${selectedExamId}/questions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(newQuestion),
       });
+      const data = await res.json();
+      if (data.success && data.question) {
+        canonicalQuestion = data.question;
+      }
     } catch (e) {
       console.warn('Backend save question note:', e);
     }
 
-    onQuestionAdded(selectedExamId, newQuestion);
+    onQuestionAdded(selectedExamId, canonicalQuestion);
     onClose();
   };
 

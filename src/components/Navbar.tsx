@@ -1,18 +1,16 @@
 import React from 'react';
 import {
   ShieldCheck,
-  UserCheck,
   Eye,
   AlertTriangle,
   Cpu,
-  Sparkles,
   LogOut,
-  Layers,
   FileCheck,
   PlusCircle,
   BarChart3,
   Sun,
   Moon,
+  BookOpen,
 } from 'lucide-react';
 import { AuthUser, GlassTheme } from '../types';
 import { GLASS_THEMES } from '../utils/theme';
@@ -27,6 +25,7 @@ interface NavbarProps {
   setCurrentTheme: (theme: GlassTheme) => void;
   onOpenDocScanner?: () => void;
   onOpenQuestionBuilder?: () => void;
+  onOpenProjectReport?: () => void;
   isExamInProgress?: boolean;
 }
 
@@ -40,6 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentTheme,
   onOpenDocScanner,
   onOpenQuestionBuilder,
+  onOpenProjectReport,
   isExamInProgress,
 }) => {
   const theme = GLASS_THEMES[currentTheme];
@@ -55,7 +55,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className={`sticky top-0 z-40 border-b ${theme.border} ${theme.navBg} ${theme.textPrimary} transition-colors duration-300`}>
+    <header
+      className={`sticky top-0 z-40 border-b ${theme.border} ${theme.navBg} ${theme.textPrimary} transition-colors duration-300`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Zone 1: Wordmark */}
@@ -68,8 +70,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="font-extrabold text-lg tracking-tight text-white font-['Plus_Jakarta_Sans']">
                   Ordeal
                 </span>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${theme.badgeBg} ${theme.badgeText}`}>
-                  {isProctor ? 'Proctor Center' : 'Candidate Room'}
+                <span className="text-[11px] font-medium text-slate-400">
+                  · {isProctor ? 'Proctor Center' : 'Candidate Room'}
                 </span>
               </div>
             </div>
@@ -81,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <>
                 <button
                   onClick={() => setCurrentTab('proctor')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
                     currentTab === 'proctor'
                       ? 'bg-white/15 text-white border border-white/20 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -93,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 <button
                   onClick={() => setCurrentTab('analytics')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
                     currentTab === 'analytics'
                       ? 'bg-white/15 text-white border border-white/20 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -105,7 +107,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 <button
                   onClick={() => setCurrentTab('violations')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all relative ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all relative whitespace-nowrap shrink-0 ${
                     currentTab === 'violations'
                       ? 'bg-white/15 text-white border border-white/20 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -114,7 +116,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
                   <span>Evidence Audit</span>
                   {pendingViolationsCount > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-rose-500 text-white keep-white">
+                    <span className="px-1.5 py-0.2 rounded-md text-[10px] font-bold bg-rose-500 text-white keep-white tabular-nums">
                       {pendingViolationsCount}
                     </span>
                   )}
@@ -122,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 <button
                   onClick={() => setCurrentTab('lab')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
                     currentTab === 'lab'
                       ? 'bg-white/15 text-white border border-white/20 shadow-sm'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -136,7 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {onOpenDocScanner && (
                   <button
                     onClick={onOpenDocScanner}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-all ml-2"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-all ml-1 whitespace-nowrap shrink-0"
                   >
                     <FileCheck className="w-3.5 h-3.5" />
                     <span>Scan Document</span>
@@ -146,7 +148,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {onOpenQuestionBuilder && (
                   <button
                     onClick={onOpenQuestionBuilder}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 transition-all whitespace-nowrap shrink-0"
                   >
                     <PlusCircle className="w-3.5 h-3.5" />
                     <span>Question Builder</span>
@@ -154,27 +156,41 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
               </>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <span className="text-xs font-medium text-slate-300">
                   Candidate Examination Portal
                 </span>
                 {isExamInProgress && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    MONITOR ACTIVE
+                  <span className="text-xs font-mono text-emerald-400">
+                    · Monitoring Active
                   </span>
                 )}
               </div>
             )}
           </nav>
 
-          {/* Zone 3: Light/Dark Mode Toggle, Theme Switcher & User Profile & Logout */}
+          {/* Zone 3: Project Report, Light/Dark Mode Toggle, Theme Switcher & User Profile */}
           <div className="flex items-center gap-2 shrink-0">
+            {onOpenProjectReport && (
+              <button
+                onClick={onOpenProjectReport}
+                title="View Official Project Report PDF & Run Verification Suite"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-semibold text-emerald-300 transition-all whitespace-nowrap shrink-0"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline text-[11px]">Report & Verify</span>
+              </button>
+            )}
+
             {/* Dedicated Light / Dark Mode Quick Toggle */}
             <button
               onClick={handleToggleDarkMode}
-              title={isLightMode ? 'Switch to Dark Mode (Obsidian)' : 'Switch to Light Mode (Warm Alabaster)'}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-semibold text-white transition-all shadow-xs"
+              title={
+                isLightMode
+                  ? 'Switch to Dark Mode (Obsidian)'
+                  : 'Switch to Light Mode (Warm Alabaster)'
+              }
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-semibold text-white transition-all shadow-xs whitespace-nowrap shrink-0"
             >
               {isLightMode ? (
                 <>
@@ -196,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={thm}
                   onClick={() => setCurrentTheme(thm)}
                   title={GLASS_THEMES[thm].tagline}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-all ${
+                  className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-all whitespace-nowrap shrink-0 ${
                     currentTheme === thm
                       ? 'bg-white/20 text-white shadow-xs border border-white/20'
                       : 'text-slate-400 hover:text-slate-200'
@@ -210,11 +226,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* User Chip */}
             <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-xs">
               <div className="w-5 h-5 rounded-full overflow-hidden bg-slate-700 shrink-0">
-                <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.name}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="hidden md:block text-left leading-tight">
-                <p className="font-bold text-white text-[11px] truncate max-w-[110px]">{currentUser.name}</p>
-                <p className="text-[10px] text-slate-400 font-mono">{currentUser.studentId || currentUser.staffId}</p>
+                <p className="font-bold text-white text-[11px] truncate max-w-[115px]">
+                  {currentUser.name}
+                </p>
+                <p className="text-[10px] text-slate-400 font-mono tabular-nums">
+                  {currentUser.rollNumber || currentUser.studentId || currentUser.staffId}
+                </p>
               </div>
             </div>
 
@@ -222,7 +247,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onLogout}
               title="Sign Out / Switch Portal"
-              className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-all text-xs font-semibold flex items-center gap-1.5"
+              className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-all text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden lg:inline text-[11px]">Sign Out</span>

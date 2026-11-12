@@ -13,8 +13,15 @@ import { ViolationEvidenceReview } from './components/ViolationEvidenceReview';
 import { AntiSpoofingLab } from './components/AntiSpoofingLab';
 import { DocumentScannerModal } from './components/DocumentScannerModal';
 import { QuestionBuilderModal } from './components/QuestionBuilderModal';
+import { ProjectReportModal } from './components/ProjectReportModal';
 import { Exam, StudentSession, ViolationRecord, AuthUser, GlassTheme, ExamQuestion } from './types';
 import { GLASS_THEMES } from './utils/theme';
+import {
+  signOutFirebase,
+  syncExamToFirestore,
+  syncSessionToFirestore,
+  syncViolationToFirestore,
+} from './firebase';
 
 const defaultExams: Exam[] = [
   {
@@ -203,6 +210,7 @@ export default function App() {
   // Modals state
   const [isDocScannerOpen, setIsDocScannerOpen] = useState(false);
   const [isQuestionBuilderOpen, setIsQuestionBuilderOpen] = useState(false);
+  const [isProjectReportOpen, setIsProjectReportOpen] = useState(false);
 
   const themeConfig = GLASS_THEMES[currentTheme];
 
@@ -217,6 +225,17 @@ export default function App() {
     }
   }, [themeConfig.mode]);
 
+  const getProctorHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-User-Role': currentUser?.role || 'proctor',
+    };
+    if (currentUser?.authToken) {
+      headers['Authorization'] = `Bearer ${currentUser.authToken}`;
+    }
+    return headers;
+  };
+
   const fetchData = async () => {
     try {
       const [examsRes, sessionsRes, violationsRes] = await Promise.all([
@@ -227,7 +246,7 @@ export default function App() {
 
       if (examsRes.exams && examsRes.exams.length > 0) {
         setExams(examsRes.exams);
-        setSelectedExam(examsRes.exams[0]);
+        setSelectedExam((prev) => examsRes.exams.find((e: Exam) => e.id === prev.id) || examsRes.exams[0]);
       }
       if (sessionsRes.sessions) {
         setSessions(sessionsRes.sessions);
@@ -253,7 +272,10 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (currentUser?.authProvider === 'firebase') {
+      await signOutFirebase();
+    }
     setCurrentUser(null);
     setActiveSession(null);
   };
@@ -262,6 +284,25 @@ export default function App() {
     setActiveSession(newSession);
     setPreparedActiveExam(preparedExam);
     setSessions((prev) => [newSession, ...prev]);
+    if (currentUser?.authProvider === 'firebase') {
+      syncSessionToFirestore(newSession);
+    }
+  };
+
+  const handleSessionSubmitted = (updatedSession: StudentSession) => {
+    setActiveSession(updatedSession);
+    setSessions((prev) =>
+      prev.some((s) => s.studentId === updatedSession.studentId && s.examId === updatedSession.examId)
+        ? prev.map((s) =>
+            s.studentId === updatedSession.studentId && s.examId === updatedSession.examId
+              ? updatedSession
+              : s
+          )
+        : [updatedSession, ...prev]
+    );
+    if (currentUser?.authProvider === 'firebase') {
+      syncSessionToFirestore(updatedSession);
+    }
   };
 
   const handleExitExam = () => {
@@ -271,6 +312,9 @@ export default function App() {
 
   const handleViolationOccurred = (violation: ViolationRecord) => {
     setViolations((prev) => [violation, ...prev]);
+    if (currentUser?.authProvider === 'firebase') {
+      syncViolationToFirestore(violation);
+    }
     setToastMessage(`Incident Logged: ${violation.violationType.replace(/_/g, ' ')}`);
     setTimeout(() => setToastMessage(null), 4000);
   };
@@ -279,12 +323,15 @@ export default function App() {
     try {
       const res = await fetch(`/api/violations/${id}/review`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getProctorHeaders(),
         body: JSON.stringify({ status, proctorNotes: notes }),
       });
       const data = await res.json();
       if (data.success && data.violation) {
         setViolations((prev) => prev.map((v) => (v.id === id ? data.violation : v)));
+        if (currentUser?.authProvider === 'firebase') {
+          syncViolationToFirestore(data.violation);
+        }
         fetchData();
       }
     } catch (e) {
@@ -295,18 +342,64 @@ export default function App() {
     }
   };
 
+  const handlePurgeSnapshot = async (id: string) => {
+    try {
+      const res = await fetch(`/api/violations/${id}/snapshot`, {
+        method: 'DELETE',
+        headers: getProctorHeaders(),
+      });
+      const data = await res.json();
+      if (data.success && data.violation) {
+        setViolations((prev) => prev.map((v) => (v.id === id ? data.violation : v)));
+        setToastMessage('Evidence snapshot purged per data-retention policy.');
+        setTimeout(() => setToastMessage(null), 3500);
+      }
+    } catch (e) {
+      console.warn('Snapshot purge error:', e);
+    }
+  };
+
+  const handlePurgeAllSnapshots = async () => {
+    try {
+      const res = await fetch('/api/violations/purge-snapshots', {
+        method: 'POST',
+        headers: getProctorHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchData();
+        setToastMessage(`Purged ${data.purgedCount} stored evidence snapshots.`);
+        setTimeout(() => setToastMessage(null), 3500);
+      }
+    } catch (e) {
+      console.warn('Bulk snapshot purge error:', e);
+    }
+  };
+
   const handleExamCreated = (newExam: Exam) => {
-    setExams((prev) => [newExam, ...prev]);
+    setExams((prev) => [newExam, ...prev.filter((e) => e.id !== newExam.id)]);
     setSelectedExam(newExam);
+    if (currentUser?.authProvider === 'firebase') {
+      syncExamToFirestore(newExam);
+    }
     setToastMessage(`Document digitized into new exam: ${newExam.title}`);
     setTimeout(() => setToastMessage(null), 4000);
   };
 
   const handleQuestionAdded = (examId: string, question: ExamQuestion) => {
     setExams((prev) =>
-      prev.map((ex) => (ex.id === examId ? { ...ex, questions: [...ex.questions, question] } : ex))
+      prev.map((ex) => {
+        if (ex.id === examId) {
+          const updated = { ...ex, questions: [...ex.questions, question] };
+          if (currentUser?.authProvider === 'firebase') {
+            syncExamToFirestore(updated);
+          }
+          return updated;
+        }
+        return ex;
+      })
     );
-    setToastMessage(`Added new question to exam: ${question.question.slice(0, 35)}...`);
+    setToastMessage(`Added new question (${question.id}) to exam: ${question.question.slice(0, 35)}...`);
     setTimeout(() => setToastMessage(null), 4000);
   };
 
@@ -325,7 +418,7 @@ export default function App() {
     try {
       await fetch(`/api/exams/${examId}/settings`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getProctorHeaders(),
         body: JSON.stringify({
           securitySettings: { randomizeQuestionsAndOptions: currentVal },
         }),
@@ -342,14 +435,22 @@ export default function App() {
 
   const pendingViolationsCount = violations.filter((v) => v.status === 'PENDING_REVIEW').length;
 
-  // Unauthenticated State: Render Glassmorphic Login Screen
+  // Unauthenticated State: Render Glassmorphic Login Screen + Project Report Modal
   if (!currentUser) {
     return (
-      <LoginPage
-        onLogin={handleLogin}
-        currentTheme={currentTheme}
-        setCurrentTheme={setCurrentTheme}
-      />
+      <>
+        <LoginPage
+          onLogin={handleLogin}
+          currentTheme={currentTheme}
+          setCurrentTheme={setCurrentTheme}
+          onOpenProjectReport={() => setIsProjectReportOpen(true)}
+        />
+        <ProjectReportModal
+          isOpen={isProjectReportOpen}
+          onClose={() => setIsProjectReportOpen(false)}
+          currentTheme={currentTheme}
+        />
+      </>
     );
   }
 
@@ -389,6 +490,7 @@ export default function App() {
         setCurrentTheme={setCurrentTheme}
         onOpenDocScanner={() => setIsDocScannerOpen(true)}
         onOpenQuestionBuilder={() => setIsQuestionBuilderOpen(true)}
+        onOpenProjectReport={() => setIsProjectReportOpen(true)}
         isExamInProgress={!!activeSession && activeSession.status === 'IN_PROGRESS'}
       />
 
@@ -403,6 +505,7 @@ export default function App() {
                 session={activeSession}
                 onExitExam={handleExitExam}
                 onViolationOccurred={handleViolationOccurred}
+                onSessionSubmitted={handleSessionSubmitted}
                 currentTheme={currentTheme}
               />
             ) : (
@@ -440,6 +543,8 @@ export default function App() {
               <ViolationEvidenceReview
                 violations={violations}
                 onReviewViolation={handleReviewViolation}
+                onPurgeSnapshot={handlePurgeSnapshot}
+                onPurgeAllSnapshots={handlePurgeAllSnapshots}
                 selectedStudentFilter={selectedStudentFilter}
                 currentTheme={currentTheme}
               />
@@ -456,6 +561,7 @@ export default function App() {
         onClose={() => setIsDocScannerOpen(false)}
         onExamCreated={handleExamCreated}
         currentTheme={currentTheme}
+        authToken={currentUser.authToken}
       />
 
       {/* Question Builder with AI Distractor Modal */}
@@ -464,6 +570,14 @@ export default function App() {
         onClose={() => setIsQuestionBuilderOpen(false)}
         exams={exams}
         onQuestionAdded={handleQuestionAdded}
+        currentTheme={currentTheme}
+        authToken={currentUser.authToken}
+      />
+
+      {/* Project Report & Verification Suite Modal */}
+      <ProjectReportModal
+        isOpen={isProjectReportOpen}
+        onClose={() => setIsProjectReportOpen(false)}
         currentTheme={currentTheme}
       />
     </div>

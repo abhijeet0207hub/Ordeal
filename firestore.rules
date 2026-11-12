@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isProctor() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "garv0207s@gmail.com" && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'proctor')
+      );
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 180 &&
+             data.role in ['candidate', 'proctor'];
+    }
+
+    function isValidExam(data) {
+      return data.keys().hasAll(['id', 'title', 'code', 'durationMinutes', 'totalMarks', 'passingMarks']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 100 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 240 &&
+             data.code is string && data.code.size() > 0 && data.code.size() <= 40 &&
+             data.durationMinutes is number && data.durationMinutes > 0 && data.durationMinutes <= 360 &&
+             data.totalMarks is number && data.totalMarks >= 0 &&
+             data.passingMarks is number && data.passingMarks >= 0;
+    }
+
+    function isValidSession(data) {
+      return data.keys().hasAll(['sessionId', 'studentId', 'studentName', 'examId', 'startedAt', 'status']) &&
+             data.sessionId is string && data.sessionId.size() > 0 && data.sessionId.size() <= 100 &&
+             data.studentId is string && data.studentId.size() > 0 && data.studentId.size() <= 100 &&
+             data.studentName is string && data.studentName.size() > 0 && data.studentName.size() <= 150 &&
+             data.examId is string && data.examId.size() > 0 && data.examId.size() <= 100 &&
+             data.startedAt is string && data.startedAt.size() <= 60 &&
+             data.status in ['IN_PROGRESS', 'SUBMITTED', 'DISQUALIFIED', 'FLAGGED'];
+    }
+
+    function isValidViolation(data) {
+      return data.keys().hasAll(['id', 'sessionId', 'studentId', 'violationType', 'severity', 'status']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 100 &&
+             data.sessionId is string && data.sessionId.size() > 0 && data.sessionId.size() <= 100 &&
+             data.studentId is string && data.studentId.size() > 0 && data.studentId.size() <= 100 &&
+             data.violationType is string && data.violationType.size() > 0 && data.violationType.size() <= 80 &&
+             data.severity in ['CRITICAL', 'WARNING', 'INFO'] &&
+             data.status in ['PENDING_REVIEW', 'UPHELD', 'DISMISSED'];
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isProctor();
+      allow create, update: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow delete: if isProctor();
+    }
+
+    match /exams/{examId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidExam(request.resource.data);
+      allow delete: if isProctor();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidSession(request.resource.data);
+      allow delete: if isProctor();
+    }
+
+    match /violations/{violationId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidViolation(request.resource.data);
+      allow delete: if isProctor();
+    }
+  }
+}
